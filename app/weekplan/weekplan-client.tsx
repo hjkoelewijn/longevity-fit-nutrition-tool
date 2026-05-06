@@ -89,7 +89,11 @@ export function WeekplanClient({
     const ac = new AbortController();
     const timeoutId = window.setTimeout(() => ac.abort(), GENERATE_TIMEOUT_MS);
     try {
-      const res = await fetch("/api/weekplan/generate", {
+      const generateUrl = new URL(
+        "/api/weekplan/generate",
+        window.location.origin,
+      ).toString();
+      const res = await fetch(generateUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
