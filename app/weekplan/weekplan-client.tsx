@@ -81,6 +81,24 @@ export function WeekplanClient({
     return () => window.clearInterval(id);
   }, [genLoading]);
 
+  async function fetchWithUrlFallback(
+    absoluteUrl: string,
+    relativeUrl: string,
+    init: RequestInit,
+  ) {
+    try {
+      return await fetch(absoluteUrl, init);
+    } catch (err) {
+      const isInvalidValue =
+        err instanceof TypeError &&
+        String(err.message).toLowerCase().includes("invalid value");
+      if (!isInvalidValue) {
+        throw err;
+      }
+      return fetch(relativeUrl, init);
+    }
+  }
+
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -93,7 +111,7 @@ export function WeekplanClient({
         "/api/weekplan/generate",
         window.location.origin,
       ).toString();
-      const res = await fetch(generateUrl, {
+      const generateInit: RequestInit = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -102,7 +120,12 @@ export function WeekplanClient({
           snacks_enabled: snacks,
         }),
         signal: ac.signal,
-      });
+      };
+      const res = await fetchWithUrlFallback(
+        generateUrl,
+        "/api/weekplan/generate",
+        generateInit,
+      );
       const data = (await res.json()) as {
         error?: string;
         code?: string;
@@ -124,11 +147,16 @@ export function WeekplanClient({
           "/api/weekplan/hydrate",
           window.location.origin,
         ).toString();
-        void fetch(hydrateUrl, {
+        const hydrateInit: RequestInit = {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ meal_plan_id: data.mealPlanId }),
-        }).catch((hydrateErr) => {
+        };
+        void fetchWithUrlFallback(
+          hydrateUrl,
+          "/api/weekplan/hydrate",
+          hydrateInit,
+        ).catch((hydrateErr) => {
           console.error("[weekplan/hydrate] client trigger failed", hydrateErr);
         });
       }
