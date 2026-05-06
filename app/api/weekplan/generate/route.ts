@@ -18,7 +18,7 @@ import {
 import { servingsFromProfile } from "@/lib/weekplan/household-servings";
 
 /** Vercel/server: ruimere max uitvoeringstijd i.v.m. lange JSON + retry/repair. */
-export const maxDuration = 540;
+export const maxDuration = 300;
 
 type Body = {
   week_start_iso?: string;

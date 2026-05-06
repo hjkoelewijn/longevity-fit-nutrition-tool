@@ -8,7 +8,7 @@ import { validateWeekPlanPayload } from "@/lib/weekplan/validate-ai-output";
 import { buildShoppingListInsertPayload } from "@/lib/weekplan/shopping-storage";
 import { servingsFromProfile } from "@/lib/weekplan/household-servings";
 
-export const maxDuration = 540;
+export const maxDuration = 300;
 
 type Body = { meal_plan_id?: string };
 
