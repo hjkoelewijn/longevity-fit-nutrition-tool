@@ -116,10 +116,16 @@ export function WeekplanClient({
         return;
       }
       if (typeof data.mealPlanId === "string" && data.mealPlanId) {
-        void fetch("/api/weekplan/hydrate", {
+        const hydrateUrl = new URL(
+          "/api/weekplan/hydrate",
+          window.location.origin,
+        ).toString();
+        void fetch(hydrateUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ meal_plan_id: data.mealPlanId }),
+        }).catch((hydrateErr) => {
+          console.error("[weekplan/hydrate] client trigger failed", hydrateErr);
         });
       }
       router.refresh();
