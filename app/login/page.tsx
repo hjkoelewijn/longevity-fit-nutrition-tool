@@ -32,7 +32,7 @@ export default function LoginPage() {
     }
 
     setStatus("success");
-    setMessage("Check je e-mail. De magic link is naar je inbox gestuurd.");
+    setMessage("Check je e-mail. We hebben je een veilige inloglink gestuurd.");
   }
 
   async function handlePasswordLogin(event: FormEvent<HTMLFormElement>) {
@@ -92,7 +92,7 @@ export default function LoginPage() {
             disabled={status === "loading"}
             className="w-full rounded-xl bg-stone-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {status === "loading" ? "Versturen..." : "Stuur magic link"}
+            {status === "loading" ? "Versturen..." : "Stuur inloglink"}
           </button>
         </form>
 
