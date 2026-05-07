@@ -30,6 +30,41 @@ function formatAmount(amount: string): string {
   return raw;
 }
 
+function formatAmountWithIngredient(name: string, amount: string): string {
+  const raw = amount.trim();
+  const ingredient = name.toLowerCase();
+  const spiceLike =
+    /(zout|peper|kaneel|komijn|kurkuma|paprika|oregano|tijm|venkel|specerij|kruiden|knoflookpoeder|uienpoeder|chilipoeder)/.test(
+      ingredient,
+    );
+  const liquidLike =
+    /(olijfolie|olie|azijn|citroensap|limoensap|sojasaus|tamari|honing|mosterd)/.test(
+      ingredient,
+    );
+
+  const asNumber = Number(raw.replace(",", "."));
+  if (Number.isFinite(asNumber) && /^\d+([.,]\d+)?$/.test(raw)) {
+    if (spiceLike && asNumber <= 1) return "snufje";
+    if (spiceLike && asNumber <= 5) return `${Math.max(1, Math.round(asNumber / 2))} tl`;
+    if (liquidLike && asNumber <= 15) return `${Math.max(1, Math.round(asNumber / 5))} tl`;
+    if (liquidLike && asNumber <= 45) return `${Math.max(1, Math.round(asNumber / 15))} el`;
+    return `${raw} g`;
+  }
+
+  const gramsMatch = raw.match(/^(\d+(?:[.,]\d+)?)\s*g$/i);
+  if (gramsMatch) {
+    const g = Number(gramsMatch[1].replace(",", "."));
+    if (Number.isFinite(g)) {
+      if (spiceLike && g <= 1) return "snufje";
+      if (spiceLike && g <= 5) return `${Math.max(1, Math.round(g / 2))} tl`;
+      if (liquidLike && g <= 15) return `${Math.max(1, Math.round(g / 5))} tl`;
+      if (liquidLike && g <= 45) return `${Math.max(1, Math.round(g / 15))} el`;
+    }
+  }
+
+  return formatAmount(raw);
+}
+
 function lunchUsesLeftoversTitle(title: string): boolean {
   const t = title.toLowerCase();
   return t.includes("restjes") || t.includes("leftover");
@@ -122,7 +157,7 @@ export default async function WeekplanReceptPage(props: {
           ) : null}
           {hasLeftoverLunchTomorrow ? (
             <p className="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-              <span className="font-medium">Restjes-tip:</span> houd je weekplan aan en
+              <span className="font-medium">Restjes-tip:</span> houd je het weekplan aan en
               eet je dit morgen als lunch, maak dan ongeveer{" "}
               <strong>150 g groente + 75 g eiwit + 50 g koolhydraatbron</strong> extra
               voor 1 extra lunchportie.
@@ -135,7 +170,9 @@ export default async function WeekplanReceptPage(props: {
               {meal.ingredients.map((ing, i) => (
                 <li key={i}>
                   <span className="font-medium">{ing.name}</span>{" "}
-                  <span className="text-stone-600">{formatAmount(ing.amount)}</span>
+                  <span className="text-stone-600">
+                    {formatAmountWithIngredient(ing.name, ing.amount)}
+                  </span>
                   {ing.note ? (
                     <span className="text-stone-500"> ({ing.note})</span>
                   ) : null}
