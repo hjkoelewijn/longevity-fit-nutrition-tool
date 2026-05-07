@@ -86,6 +86,12 @@ export function buildWeekPlanUserPrompt(bundle: ProfileBundle): string {
       : "";
   const bloating = typeof gutStatus.bloating === "string" ? gutStatus.bloating : "";
   const gutIssue = typeof gutStatus.gut_issue === "string" ? gutStatus.gut_issue : "";
+  const intolerances = Array.isArray(p.intolerances)
+    ? (p.intolerances as unknown[])
+        .filter((x): x is string => typeof x === "string")
+        .map((x) => x.toLowerCase())
+    : [];
+  const hasFodmapIntolerance = intolerances.some((x) => x.includes("fodmap"));
   const digestiveGuardrailBlock = `
 Spijsvertering & gevoeligheden (harde guardrails):
 - gluten_approach = "${glutenApproach || "onbekend"}"
@@ -96,6 +102,11 @@ Spijsvertering & gevoeligheden (harde guardrails):
 - Als legumes_approach "vermijd ik" is: geen peulvruchten in gerechten.
 - Als legumes_approach "word ik opgeblazen / winderig van" is: peulvruchten minimaal toepassen (maximaal 2 maaltijden per week met peulvruchten, in kleine rol).
 - Bij bloating="ja" of gut_issue="ja": kies milde bereidingen (niet pittig, niet zwaar gefrituurd), rustig opbouwend.
+- Als intolerances FODMAP bevat (${hasFodmapIntolerance ? "JA" : "NEE"}): vermijd hoge-FODMAP triggers (o.a. linzen, kikkererwten/bonen, ui, knoflook, tarwe, rogge).
+- Als intolerances lactose bevat: vermijd lactose-rijke zuivel (melk, yoghurt/kwark, room, zachte kazen), kies lactosevrij/plantaardig.
+- Als intolerances nachtschades bevat: vermijd tomaat, paprika, aubergine en aardappel.
+- Als intolerances histamine bevat: vermijd histaminerijke keuzes (oude kaas, gerookt/gefermenteerd, ingeblikte vis, salami, wijn).
+- Als intolerances "anders" bevat: hanteer conservatieve, milde keuzes en vermijd bekende triggers.
 `.trim();
 
   const speedBlock = bundle.draftMode

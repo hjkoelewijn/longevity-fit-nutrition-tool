@@ -99,6 +99,14 @@ const GLUTEN_REGEX =
 const LEGUME_REGEX =
   /\b(linzen|kikkererwt|kikkererwten|bonen|zwarte bonen|kidneybonen|witte bonen|sojaboon|sojabonen|edamame)\b/i;
 const GUT_TRIGGER_REGEX = /\b(chili|sambal|jalapeno|gefrituurd|frituur)\b/i;
+const FODMAP_HIGH_REGEX =
+  /\b(linzen|kikkererwt|kikkererwten|bonen|ui|knoflook|tarwe|rogge|honing|appel|peer|bloemkool)\b/i;
+const LACTOSE_REGEX =
+  /\b(melk|yoghurt|kwark|room|slagroom|kefir|zachte kaas|mozzarella|mascarpone)\b/i;
+const NIGHTSHADE_REGEX =
+  /\b(tomaat|paprika|aubergine|aardappel|chili|cayenne)\b/i;
+const HISTAMINE_REGEX =
+  /\b(oude kaas|gerookte vis|tonijn uit blik|salami|zuurkool|kimchi|azijnrijke marinade|wijn)\b/i;
 
 export function checkDigestiveGuardrails(
   profile: Record<string, unknown>,
@@ -120,11 +128,21 @@ export function checkDigestiveGuardrails(
     typeof gut.bloating === "string" ? gut.bloating.toLowerCase() : "";
   const gutIssue =
     typeof gut.gut_issue === "string" ? gut.gut_issue.toLowerCase() : "";
+  const intolerances = Array.isArray(profile.intolerances)
+    ? (profile.intolerances as unknown[])
+        .filter((x): x is string => typeof x === "string")
+        .map((x) => x.toLowerCase())
+    : [];
+  const hasFodmapIntolerance = intolerances.some((x) => x.includes("fodmap"));
 
   const texts = meals.map((m) => collectTextFromMeal(m));
   const glutenMeals = texts.filter((t) => GLUTEN_REGEX.test(t)).length;
   const legumeMeals = texts.filter((t) => LEGUME_REGEX.test(t)).length;
   const gutTriggerMeals = texts.filter((t) => GUT_TRIGGER_REGEX.test(t)).length;
+  const fodmapHighMeals = texts.filter((t) => FODMAP_HIGH_REGEX.test(t)).length;
+  const lactoseMeals = texts.filter((t) => LACTOSE_REGEX.test(t)).length;
+  const nightshadeMeals = texts.filter((t) => NIGHTSHADE_REGEX.test(t)).length;
+  const histamineMeals = texts.filter((t) => HISTAMINE_REGEX.test(t)).length;
 
   if (glutenApproach.includes("vermijd") && glutenMeals > 0) {
     return {
@@ -168,6 +186,52 @@ export function checkDigestiveGuardrails(
       code: "digestive_mildness",
       message:
         "Bij darmklachten vroeg het profiel om milde bereidingen, maar er staan nog pittige of gefrituurde elementen in het plan.",
+    };
+  }
+  if (hasFodmapIntolerance && fodmapHighMeals > 0) {
+    return {
+      ok: false,
+      code: "digestive_fodmap",
+      message:
+        "FODMAP-intolerantie staat in het profiel, maar het plan bevat nog hoge-FODMAP triggers (zoals linzen/ui/knoflook/tarwe).",
+    };
+  }
+  if (intolerances.some((x) => x.includes("lactose")) && lactoseMeals > 0) {
+    return {
+      ok: false,
+      code: "digestive_lactose",
+      message:
+        "Lactose-intolerantie staat in het profiel, maar het plan bevat nog lactose-rijke zuivel.",
+    };
+  }
+  if (
+    intolerances.some((x) => x.includes("nachtschade")) &&
+    nightshadeMeals > 0
+  ) {
+    return {
+      ok: false,
+      code: "digestive_nightshade",
+      message:
+        "Nachtschade-gevoeligheid staat in het profiel, maar het plan bevat nog nachtschades (zoals tomaat/paprika/aubergine/aardappel).",
+    };
+  }
+  if (intolerances.some((x) => x.includes("histamine")) && histamineMeals > 0) {
+    return {
+      ok: false,
+      code: "digestive_histamine",
+      message:
+        "Histamine-gevoeligheid staat in het profiel, maar het plan bevat nog histamine-rijke keuzes.",
+    };
+  }
+  if (
+    intolerances.some((x) => x.includes("anders")) &&
+    (fodmapHighMeals > 0 || gutTriggerMeals > 0)
+  ) {
+    return {
+      ok: false,
+      code: "digestive_other_intolerance",
+      message:
+        "Er is 'Anders' intolerantie aangegeven. Het plan moet extra conservatief zijn en bevat nu nog mogelijke triggers.",
     };
   }
 
