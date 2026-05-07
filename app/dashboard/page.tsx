@@ -62,13 +62,17 @@ export default async function DashboardPage(props: {
         )}
 
         <div className="mt-8 rounded-xl border border-stone-200 bg-stone-50 p-6">
-          <p className="text-sm text-stone-700">
-            Je persoonlijke weekplan en boodschappenlijst vind je onder Weekplan.
-            Zodra er weekplannen zijn gegenereerd vind je een overzicht van
-            recepten per soort onder Inspiratie. In de kennisbank vind je alle
-            achtergrondinformatie rondom voeding, je lichaam en onze visie die in
-            de weekplannen verwerkt zit.
-          </p>
+          <ul className="list-disc space-y-2 pl-5 text-sm text-stone-700">
+            <li>Je persoonlijke weekplan en boodschappenlijst vind je onder Weekplan.</li>
+            <li>
+              Zodra er weekplannen zijn gegenereerd vind je een overzicht van recepten per
+              soort onder Inspiratie.
+            </li>
+            <li>
+              In de kennisbank vind je alle achtergrondinformatie rondom voeding, je lichaam
+              en onze visie die in de weekplannen verwerkt zit.
+            </li>
+          </ul>
         </div>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-x-8 sm:gap-y-2">

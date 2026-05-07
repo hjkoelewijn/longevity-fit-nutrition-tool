@@ -27,6 +27,44 @@ type Body = {
   snacks_enabled?: boolean;
 };
 
+function normalizeIngredientAmounts(payload: WeekPlanPayload) {
+  for (const day of payload.days) {
+    const meals = [
+      day.meals.ontbijt,
+      day.meals.lunch,
+      day.meals.diner,
+      ...(day.tussendoortjes ?? []),
+    ];
+    for (const meal of meals) {
+      for (const ing of meal.ingredients ?? []) {
+        const raw = String(ing.amount ?? "").trim();
+        if (!raw) continue;
+        if (/^\d+([.,]\d+)?$/.test(raw)) {
+          ing.amount = `${raw} g`;
+        }
+      }
+    }
+  }
+}
+
+function enforceLeftoverDinnerServings(payload: WeekPlanPayload, householdServings: number) {
+  for (let i = 1; i < payload.days.length; i++) {
+    const lunch = payload.days[i]?.meals?.lunch;
+    const prevDinner = payload.days[i - 1]?.meals?.diner;
+    if (!lunch || !prevDinner) continue;
+    const lunchTitle = String(lunch.title ?? "").toLowerCase();
+    const lunchUsesLeftovers =
+      lunch.repeat_for_leftovers === true ||
+      lunchTitle.includes("restjes") ||
+      lunchTitle.includes("leftover");
+    if (!lunchUsesLeftovers) continue;
+    const minDinnerServings = Math.max(2, householdServings + 1);
+    if (typeof prevDinner.servings !== "number" || prevDinner.servings < minDinnerServings) {
+      prevDinner.servings = minDinnerServings;
+    }
+  }
+}
+
 function nextMondayIso(): string {
   const d = new Date();
   const day = d.getDay();
@@ -384,6 +422,8 @@ export async function POST(request: Request) {
         }
       }
     }
+    enforceLeftoverDinnerServings(payload, servings);
+    normalizeIngredientAmounts(payload);
     const allergies = Array.isArray(profile.allergies)
       ? (profile.allergies as unknown[]).filter(
           (a): a is string => typeof a === "string",

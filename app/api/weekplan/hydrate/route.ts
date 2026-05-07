@@ -12,6 +12,44 @@ export const maxDuration = 300;
 
 type Body = { meal_plan_id?: string };
 
+function normalizeIngredientAmounts(payload: WeekPlanPayload) {
+  for (const day of payload.days) {
+    const meals = [
+      day.meals.ontbijt,
+      day.meals.lunch,
+      day.meals.diner,
+      ...(day.tussendoortjes ?? []),
+    ];
+    for (const meal of meals) {
+      for (const ing of meal.ingredients ?? []) {
+        const raw = String(ing.amount ?? "").trim();
+        if (!raw) continue;
+        if (/^\d+([.,]\d+)?$/.test(raw)) {
+          ing.amount = `${raw} g`;
+        }
+      }
+    }
+  }
+}
+
+function enforceLeftoverDinnerServings(payload: WeekPlanPayload, householdServings: number) {
+  for (let i = 1; i < payload.days.length; i++) {
+    const lunch = payload.days[i]?.meals?.lunch;
+    const prevDinner = payload.days[i - 1]?.meals?.diner;
+    if (!lunch || !prevDinner) continue;
+    const lunchTitle = String(lunch.title ?? "").toLowerCase();
+    const lunchUsesLeftovers =
+      lunch.repeat_for_leftovers === true ||
+      lunchTitle.includes("restjes") ||
+      lunchTitle.includes("leftover");
+    if (!lunchUsesLeftovers) continue;
+    const minDinnerServings = Math.max(2, householdServings + 1);
+    if (typeof prevDinner.servings !== "number" || prevDinner.servings < minDinnerServings) {
+      prevDinner.servings = minDinnerServings;
+    }
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -130,6 +168,8 @@ ${JSON.stringify(payload)}
         snack.servings = 1;
       }
     }
+    enforceLeftoverDinnerServings(nextPayload, targetDinnerServings);
+    normalizeIngredientAmounts(nextPayload);
     const shoppingPayload = buildShoppingListInsertPayload(nextPayload);
 
     const { error: planUpErr } = await supabase

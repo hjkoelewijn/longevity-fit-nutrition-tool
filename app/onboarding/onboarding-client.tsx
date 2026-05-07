@@ -631,9 +631,11 @@ export default function OnboardingClient(props: {
                 <option value="4">4</option>
               </select>
               <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-                Bij Longevity Fit adviseren we maximaal 4 eetmomenten per dag.
-                Dit wordt uitgelegd in de kennisbank. We gaan uit van 3
-                hoofdmaaltijden en een snack.
+                <ul className="list-disc space-y-1 pl-5">
+                  <li>Bij Longevity Fit adviseren we maximaal 4 eetmomenten per dag.</li>
+                  <li>Dit wordt uitgelegd in de kennisbank.</li>
+                  <li>We gaan uit van 3 hoofdmaaltijden en een snack.</li>
+                </ul>
               </div>
             </Field>
 
@@ -946,9 +948,16 @@ export default function OnboardingClient(props: {
             </Field>
 
             <div className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">
-              Darmklachten nu zeggen iets over je huidige belastbaarheid, niet over
-              "voor altijd". Als je darmwand en vertering herstellen, kan tolerantie
-              voor bepaalde producten later verbeteren.
+              <ul className="list-disc space-y-1 pl-5">
+                <li>
+                  Darmklachten nu zeggen iets over je huidige belastbaarheid, niet over
+                  "voor altijd".
+                </li>
+                <li>
+                  Als je darmwand en vertering herstellen, kan tolerantie voor bepaalde
+                  producten later verbeteren.
+                </li>
+              </ul>
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
@@ -1003,9 +1012,15 @@ export default function OnboardingClient(props: {
         {step === 5 ? (
           <form className="mt-8 space-y-5" onSubmit={onSubmitPhase5}>
             <div className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700">
-              Deze cyclusinformatie gebruiken we nu vooral als intake-inzicht voor
-              begeleiding. Een latere versie kan weekmenu's per cyclusfase
-              verfijnen.
+              <ul className="list-disc space-y-1 pl-5">
+                <li>
+                  Deze cyclusinformatie gebruiken we nu vooral als intake-inzicht voor
+                  begeleiding.
+                </li>
+                <li>
+                  Een latere versie kan weekmenu's per cyclusfase verfijnen.
+                </li>
+              </ul>
             </div>
             <Field label="Cyclus / levensfase">
               <select

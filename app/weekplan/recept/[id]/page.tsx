@@ -22,6 +22,19 @@ function servingsLabel(slot: string, servings: number): string {
     : `${servings} portie (per persoon)`;
 }
 
+function formatAmount(amount: string): string {
+  const raw = amount.trim();
+  if (/^\d+([.,]\d+)?$/.test(raw)) {
+    return `${raw} g`;
+  }
+  return raw;
+}
+
+function lunchUsesLeftoversTitle(title: string): boolean {
+  const t = title.toLowerCase();
+  return t.includes("restjes") || t.includes("leftover");
+}
+
 export default async function WeekplanReceptPage(props: {
   params: Promise<{ id: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -60,6 +73,17 @@ export default async function WeekplanReceptPage(props: {
   if (!meal) {
     notFound();
   }
+  const dayIndex = payload.days.findIndex((d) =>
+    [d.meals.ontbijt, d.meals.lunch, d.meals.diner, ...(d.tussendoortjes ?? [])].some(
+      (m) => m.id === meal.id,
+    ),
+  );
+  const hasLeftoverLunchTomorrow =
+    meal.slot === "diner" &&
+    dayIndex >= 0 &&
+    dayIndex < payload.days.length - 1 &&
+    (payload.days[dayIndex + 1].meals.lunch.repeat_for_leftovers === true ||
+      lunchUsesLeftoversTitle(payload.days[dayIndex + 1].meals.lunch.title));
 
   return (
     <main className="min-h-screen bg-stone-50 px-6 py-16">
@@ -96,6 +120,14 @@ export default async function WeekplanReceptPage(props: {
               {meal.kid_tip}
             </p>
           ) : null}
+          {hasLeftoverLunchTomorrow ? (
+            <p className="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+              <span className="font-medium">Restjes-tip:</span> houd je weekplan aan en
+              eet je dit morgen als lunch, maak dan ongeveer{" "}
+              <strong>150 g groente + 75 g eiwit + 50 g koolhydraatbron</strong> extra
+              voor 1 extra lunchportie.
+            </p>
+          ) : null}
 
           <section className="mt-8">
             <h2 className="text-lg font-semibold text-stone-900">Ingrediënten</h2>
@@ -103,7 +135,7 @@ export default async function WeekplanReceptPage(props: {
               {meal.ingredients.map((ing, i) => (
                 <li key={i}>
                   <span className="font-medium">{ing.name}</span>{" "}
-                  <span className="text-stone-600">{ing.amount}</span>
+                  <span className="text-stone-600">{formatAmount(ing.amount)}</span>
                   {ing.note ? (
                     <span className="text-stone-500"> ({ing.note})</span>
                   ) : null}

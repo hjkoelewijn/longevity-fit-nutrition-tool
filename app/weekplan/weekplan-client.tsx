@@ -230,16 +230,18 @@ export function WeekplanClient({
               <summary className="cursor-pointer font-medium text-amber-900">
                 Wat betekent dit?
               </summary>
-              <p className="mt-2 leading-relaxed">
-                <strong>Kooksessies</strong> = hoe vaak je per week echt aan het fornuis
-                staat voor het <strong>diner</strong> dat je zelf wilt koken.
-              </p>
-              <p className="mt-2 leading-relaxed">
-                Kies je bijvoorbeeld <strong>3×</strong>, dan vult het plan de week met
-                bijvoorbeeld <strong>dubbel koken / tweede dag hetzelfde gerecht</strong>,
-                en — als dat in je profiel staat — je aangegeven frequentie{" "}
-                <strong>uit eten</strong> (veld uit eerdere onboarding).
-              </p>
+              <ul className="mt-2 list-disc space-y-1 pl-4 leading-relaxed">
+                <li>
+                  <strong>Kooksessies</strong> = hoe vaak je per week echt aan het
+                  fornuis staat voor het <strong>diner</strong> dat je zelf wilt koken.
+                </li>
+                <li>
+                  Kies je bijvoorbeeld <strong>3×</strong>, dan vult het plan de week
+                  met <strong>dubbel koken / tweede dag hetzelfde gerecht</strong>, en —
+                  als dat in je profiel staat — je aangegeven frequentie{" "}
+                  <strong>uit eten</strong>.
+                </li>
+              </ul>
             </details>
             <div className="mt-3 flex flex-wrap gap-4 text-sm">
               {([3, 5, 7] as const).map((n) => (
@@ -298,14 +300,17 @@ export function WeekplanClient({
             kooksessies
             {initialPlan.snacks_enabled ? " · met tussendoortjes" : ""}
           </p>
-          <p className="mt-1 text-xs text-stone-500">
-            Portieregel: diner = gezin, ontbijt/lunch/tussendoortjes = per persoon.
-          </p>
-          <p className="mt-1 text-xs text-stone-500">
-            Intuïtief eten: zie porties als richtlijn. Luister naar trek/verzadiging
-            (actieve dag = vaak meer trek). Begin op je bord met groente + eiwit,
-            daarna vetten, daarna koolhydraten.
-          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-stone-500">
+            <li>Portieregel: diner = gezin, ontbijt/lunch/tussendoortjes = per persoon.</li>
+            <li>
+              Intuïtief eten: zie porties als richtlijn en luister naar trek/verzadiging
+              (actieve dag = vaak meer trek).
+            </li>
+            <li>
+              Bordvolgorde: start met groente + eiwit, daarna vetten, daarna
+              koolhydraten.
+            </li>
+          </ul>
           {initialPlan.user_meta?.hydrationStatus === "hydrating" ? (
             <p className="mt-3 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">
               Je weekplan staat klaar. We vullen nu de recepten verder aan (1-3
