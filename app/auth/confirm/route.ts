@@ -1,6 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
+const VALID_EMAIL_OTP_TYPES = new Set([
+  "signup",
+  "magiclink",
+  "recovery",
+  "invite",
+  "email_change",
+  "email",
+]);
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
@@ -35,19 +44,26 @@ export async function GET(request: NextRequest) {
     if (!error) {
       return response;
     }
+    return NextResponse.redirect(
+      `${origin}/login?error=auth_failed&reason=${encodeURIComponent(error.message)}`,
+    );
   }
 
   // OTP / magic-link flow: ?token_hash=...&type=...
   if (tokenHash && type) {
+    const otpType = VALID_EMAIL_OTP_TYPES.has(type) ? type : "magiclink";
     const { error } = await supabase.auth.verifyOtp({
-      type: type as "email",
+      type: otpType as "magiclink",
       token_hash: tokenHash,
     });
 
     if (!error) {
       return response;
     }
+    return NextResponse.redirect(
+      `${origin}/login?error=auth_failed&reason=${encodeURIComponent(error.message)}`,
+    );
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth_failed`);
+  return NextResponse.redirect(`${origin}/login?error=auth_failed&reason=missing_token`);
 }
