@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   FormEvent,
@@ -1405,6 +1406,24 @@ export default function OnboardingClient(props: {
                 </div>
               </div>
             ) : null}
+
+            <p className="text-xs text-stone-600">
+              Bekijk ook{" "}
+              <Link
+                href="/richtlijnen"
+                className="font-medium text-stone-900 underline underline-offset-4"
+              >
+                onze richtlijnen
+              </Link>{" "}
+              als referentie voor je weekmenu. Of lees{" "}
+              <Link
+                href="/over#visie"
+                className="font-medium text-stone-900 underline underline-offset-4"
+              >
+                onze visie
+              </Link>
+              .
+            </p>
 
             <div className="flex flex-col gap-3 sm:flex-row">
               <button

@@ -83,6 +83,9 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/profile") ||
     pathname.startsWith("/recipes") ||
     pathname.startsWith("/leren") ||
+    pathname.startsWith("/kennisbank") ||
+    pathname.startsWith("/over") ||
+    pathname.startsWith("/richtlijnen") ||
     pathname.startsWith("/weekplan");
 
   if (isProtectedPage && !user) {
@@ -140,6 +143,9 @@ export async function updateSession(request: NextRequest) {
       (pathname.startsWith("/dashboard") ||
         pathname.startsWith("/recipes") ||
         pathname.startsWith("/leren") ||
+        pathname.startsWith("/kennisbank") ||
+        pathname.startsWith("/over") ||
+        pathname.startsWith("/richtlijnen") ||
         pathname.startsWith("/weekplan"))
     ) {
       const url = request.nextUrl.clone();

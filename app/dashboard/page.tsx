@@ -63,14 +63,26 @@ export default async function DashboardPage(props: {
 
         <div className="mt-8 rounded-xl border border-stone-200 bg-stone-50 p-6">
           <ul className="list-disc space-y-2 pl-5 text-sm text-stone-700">
-            <li>Je persoonlijke weekplan en boodschappenlijst vind je onder Weekplan.</li>
             <li>
-              Zodra er weekplannen zijn gegenereerd vind je een overzicht van recepten per
-              soort onder Inspiratie.
+              <strong>Dashboard:</strong> je startpunt met je voortgang en snelle links naar alle onderdelen.
             </li>
             <li>
-              In de kennisbank vind je alle achtergrondinformatie rondom voeding, je lichaam
-              en onze visie die in de weekplannen verwerkt zit.
+              <strong>Weekmenu:</strong> hier maak je je persoonlijke weekplan, recepten en boodschappenlijst.
+            </li>
+            <li>
+              <strong>Inspiratie:</strong> hier vind je extra recepten en ideeën per soort maaltijd.
+            </li>
+            <li>
+              <strong>Richtlijnen:</strong> hier lees je de praktische Longevity Fit richtlijnen als naslag.
+            </li>
+            <li>
+              <strong>Kennisbank:</strong> hier leer je wat er in je lichaam gebeurt en waarom onze keuzes werken.
+            </li>
+            <li>
+              <strong>Over:</strong> hier lees je onze visie, achtergrond en werkwijze.
+            </li>
+            <li>
+              <strong>Profiel:</strong> hier beheer je je persoonlijke gegevens en onboarding-instellingen.
             </li>
           </ul>
         </div>
@@ -89,7 +101,13 @@ export default async function DashboardPage(props: {
             Inspiratie
           </Link>
           <Link
-            href="/leren"
+            href="/richtlijnen"
+            className="text-sm font-medium text-stone-900 underline-offset-4 hover:underline"
+          >
+            Onze richtlijnen
+          </Link>
+          <Link
+            href="/kennisbank"
             className="text-sm font-medium text-stone-900 underline-offset-4 hover:underline"
           >
             Kennisbank
@@ -99,6 +117,12 @@ export default async function DashboardPage(props: {
             className="text-sm font-medium text-stone-900 underline-offset-4 hover:underline"
           >
             Profiel
+          </Link>
+          <Link
+            href="/over#visie"
+            className="text-sm font-medium text-stone-900 underline-offset-4 hover:underline"
+          >
+            Over
           </Link>
         </div>
 

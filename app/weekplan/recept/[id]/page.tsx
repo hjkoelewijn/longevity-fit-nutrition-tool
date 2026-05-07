@@ -140,6 +140,14 @@ export default async function WeekplanReceptPage(props: {
           <h1 className="mt-1 text-3xl font-semibold text-stone-900">
             {meal.title}
           </h1>
+          <Link
+            href="/richtlijnen"
+            className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-stone-700 underline underline-offset-4"
+            title="Binnen onze richtlijnen"
+          >
+            <span aria-hidden>🧭</span>
+            Binnen onze richtlijnen
+          </Link>
           <p className="mt-2 text-sm text-stone-600">
             {meal.prep_minutes} min · {servingsLabel(meal.slot, meal.servings)} · koolhydraatmoment:{" "}
             {carbProfileNl(meal.carb_profile)}

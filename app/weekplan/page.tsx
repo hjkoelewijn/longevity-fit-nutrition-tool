@@ -83,6 +83,12 @@ export default async function WeekplanPage() {
             >
               Inspiratie
             </Link>
+            <Link
+              href="/richtlijnen"
+              className="text-sm font-medium text-stone-900 underline-offset-4 hover:underline"
+            >
+              Onze richtlijnen
+            </Link>
           </div>
 
           <form action={signOutAction} className="mt-6">

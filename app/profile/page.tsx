@@ -344,6 +344,17 @@ export default async function ProfilePage(props: {
             Status is handig als je de test pas later doet. Waarden kun je
             invullen zodra je rapport er is.
           </p>
+          <p className="mt-2 text-xs text-stone-600">
+            Wil je context bij je uitslag? Lees onze{" "}
+            <Link href="/richtlijnen" className="font-medium text-stone-900 underline underline-offset-4">
+              richtlijnen
+            </Link>
+            {" "}en{" "}
+            <Link href="/over#visie" className="font-medium text-stone-900 underline underline-offset-4">
+              visie
+            </Link>
+            .
+          </p>
 
           <form action={updateBalanceTestChoiceAction} className="mt-6 space-y-4">
             <label className="block text-sm font-medium text-stone-800">

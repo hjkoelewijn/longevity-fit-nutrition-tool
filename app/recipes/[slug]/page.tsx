@@ -81,6 +81,13 @@ export default async function RecipeDetailPage(props: {
             </p>
             <h1 className="mt-2 text-3xl font-semibold text-stone-900">{title}</h1>
             {summary ? <p className="mt-3 text-stone-600">{summary}</p> : null}
+            <Link
+              href="/richtlijnen"
+              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-stone-700 underline underline-offset-4"
+            >
+              <span aria-hidden>🧭</span>
+              Binnen onze richtlijnen
+            </Link>
             <div className="mt-4 flex flex-wrap gap-2 text-xs text-stone-500">
               {typeof r.meal_type === "string" ? (
                 <span className="rounded-full bg-stone-200 px-2 py-0.5">{r.meal_type}</span>
