@@ -73,6 +73,31 @@ Regels:
 `.trim();
 
 export function buildWeekPlanUserPrompt(bundle: ProfileBundle): string {
+  const p = bundle.profile;
+  const gutStatus =
+    p.gut_status && typeof p.gut_status === "object"
+      ? (p.gut_status as Record<string, unknown>)
+      : {};
+  const glutenApproach =
+    typeof p.gluten_approach === "string" ? p.gluten_approach : "";
+  const legumeApproach =
+    typeof gutStatus.legumes_approach === "string"
+      ? gutStatus.legumes_approach
+      : "";
+  const bloating = typeof gutStatus.bloating === "string" ? gutStatus.bloating : "";
+  const gutIssue = typeof gutStatus.gut_issue === "string" ? gutStatus.gut_issue : "";
+  const digestiveGuardrailBlock = `
+Spijsvertering & gevoeligheden (harde guardrails):
+- gluten_approach = "${glutenApproach || "onbekend"}"
+- legumes_approach = "${legumeApproach || "onbekend"}"
+- bloating = "${bloating || "onbekend"}", gut_issue = "${gutIssue || "onbekend"}"
+- Als gluten_approach "vermijd ik" is: plan volledig glutenvrij (geen tarwe/spelt/gerst/rogge).
+- Als gluten_approach "eet ik minimaal" is: plan gluten minimaal (maximaal 2 glutengerichte maaltijden per week, nooit op opeenvolgende dagen).
+- Als legumes_approach "vermijd ik" is: geen peulvruchten in gerechten.
+- Als legumes_approach "word ik opgeblazen / winderig van" is: peulvruchten minimaal toepassen (maximaal 2 maaltijden per week met peulvruchten, in kleine rol).
+- Bij bloating="ja" of gut_issue="ja": kies milde bereidingen (niet pittig, niet zwaar gefrituurd), rustig opbouwend.
+`.trim();
+
   const speedBlock = bundle.draftMode
     ? `
 Snelheidsmodus (eerste versie voor snelle UX):
@@ -133,8 +158,10 @@ Taken:
 
 Kooksessies (cook_sessions_per_week = ${bundle.cookSessionsPerWeek}):
 - Dit is het aantal keer per week dat iemand bewust kookt (warm/groter bereiden, batch), niet “elke maaltijd vers”.
-- Andere dagen: restjes/herhaling (zet repeat_for_leftovers waar logisch), snelle assembly (salade, ei, yoghurt/kwark, broodbeleg), of voorbereid uit eerdere sessie. Houd rekening met eating_pattern uit raw_profile (o.a. eat_out_per_week) voor hoe vaak uit eten past — geen harde aannames buiten profiel.
+- Andere dagen: restjes/herhaling (zet repeat_for_leftovers waar logisch), tweede dag hetzelfde gerecht of voorbereid uit eerdere sessie. Houd rekening met eating_pattern uit raw_profile (o.a. eat_out_per_week) voor hoe vaak uit eten past — geen harde aannames buiten profiel.
 - Bij 3 sessies: plan vaker dubbele porties of dezelfde schotel opnieuw (lunch volgende dag) zodat 7 dagen haalbaar blijft zonder elke avond lang koken.
+
+${digestiveGuardrailBlock}
 
 ${speedBlock}
 

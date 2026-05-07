@@ -13,6 +13,7 @@ import {
 import { buildShoppingListInsertPayload } from "@/lib/weekplan/shopping-storage";
 import {
   checkAllergiesInMeals,
+  checkDigestiveGuardrails,
   validateWeekPlanPayload,
 } from "@/lib/weekplan/validate-ai-output";
 import { servingsFromProfile } from "@/lib/weekplan/household-servings";
@@ -403,6 +404,22 @@ export async function POST(request: Request) {
         {
           error: allergyCheck.message,
           code: allergyCheck.code,
+          retry: true,
+        },
+        { status: 422 },
+      );
+    }
+    const digestiveCheck = checkDigestiveGuardrails(profile, collectAllMeals(payload));
+    if (!digestiveCheck.ok) {
+      console.warn(
+        "[weekplan/generate] darm-guardrail geweigerd",
+        digestiveCheck.code,
+        digestiveCheck.message,
+      );
+      return NextResponse.json(
+        {
+          error: digestiveCheck.message,
+          code: digestiveCheck.code,
           retry: true,
         },
         { status: 422 },

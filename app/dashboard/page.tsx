@@ -63,8 +63,11 @@ export default async function DashboardPage(props: {
 
         <div className="mt-8 rounded-xl border border-stone-200 bg-stone-50 p-6">
           <p className="text-sm text-stone-700">
-            Receptenbibliotheek en leermodules zijn beschikbaar. Je persoonlijke weekplan en
-            boodschappenlijst vind je onder Weekplan.
+            Je persoonlijke weekplan en boodschappenlijst vind je onder Weekplan.
+            Zodra er weekplannen zijn gegenereerd vind je een overzicht van
+            recepten per soort onder Inspiratie. In de kennisbank vind je alle
+            achtergrondinformatie rondom voeding, je lichaam en onze visie die in
+            de weekplannen verwerkt zit.
           </p>
         </div>
 
@@ -76,12 +79,6 @@ export default async function DashboardPage(props: {
             Weekplan
           </Link>
           <Link
-            href="/recipes"
-            className="text-sm font-medium text-stone-900 underline-offset-4 hover:underline"
-          >
-            Recepten
-          </Link>
-          <Link
             href="/inspiratie"
             className="text-sm font-medium text-stone-900 underline-offset-4 hover:underline"
           >
@@ -91,7 +88,7 @@ export default async function DashboardPage(props: {
             href="/leren"
             className="text-sm font-medium text-stone-900 underline-offset-4 hover:underline"
           >
-            Leren
+            Kennisbank
           </Link>
           <Link
             href="/profile"

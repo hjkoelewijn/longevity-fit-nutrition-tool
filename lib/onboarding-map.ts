@@ -13,6 +13,7 @@ export type GutStatusJson = {
   bloating?: string;
   gut_issue?: string;
   gut_issue_detail?: string;
+  legumes_approach?: string;
 };
 
 export type OnboardingSnapshot = {
@@ -51,6 +52,7 @@ export type OnboardingSnapshot = {
     gutIssueDetail: string;
     dairyApproach: string;
     glutenApproach: string;
+    legumeApproach: string;
     coffeeIntake: string;
     alcoholIntake: string;
   };
@@ -116,8 +118,9 @@ const DEFAULT: OnboardingSnapshot = {
     bloating: "soms",
     gutIssue: "nee",
     gutIssueDetail: "",
-    dairyApproach: "volle bio",
-    glutenApproach: "probeer minder",
+    dairyApproach: "hoofdzakelijk biologische zuivel",
+    glutenApproach: "eet ik minimaal",
+    legumeApproach: "eet ik gewoon zonder klachten",
     coffeeIntake: "1-2 per dag",
     alcoholIntake: "1-2 per week",
   },
@@ -255,6 +258,7 @@ export function mapProfileRowToSnapshot(
       gutIssueDetail: str(gut?.gut_issue_detail),
       dairyApproach: str(row.dairy_approach, DEFAULT.phase4.dairyApproach),
       glutenApproach: str(row.gluten_approach, DEFAULT.phase4.glutenApproach),
+      legumeApproach: str(gut?.legumes_approach, DEFAULT.phase4.legumeApproach),
       coffeeIntake: str(row.coffee_intake, DEFAULT.phase4.coffeeIntake),
       alcoholIntake: str(row.alcohol_intake, DEFAULT.phase4.alcoholIntake),
     },

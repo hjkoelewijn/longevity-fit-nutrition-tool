@@ -64,7 +64,7 @@ export default async function LerenPage() {
             <p className="text-sm font-medium uppercase tracking-[0.18em] text-stone-500">
               Longevity Fit
             </p>
-            <h1 className="mt-2 text-3xl font-semibold text-stone-900">Leren</h1>
+            <h1 className="mt-2 text-3xl font-semibold text-stone-900">Kennisbank</h1>
             <p className="mt-2 text-sm text-stone-600">
               Korte modules over de Longevity Fit voedingsfilosofie. Je voortgang wordt bewaard.
             </p>

@@ -40,6 +40,7 @@ type Phase4Input = {
     bloating: string;
     gut_issue: string;
     gut_issue_detail?: string;
+    legumes_approach?: string;
   };
   dairyApproach: string;
   glutenApproach: string;

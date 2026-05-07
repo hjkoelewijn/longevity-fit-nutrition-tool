@@ -57,7 +57,7 @@ const goalOptions = [
 ] as const;
 
 const supplementOptions = [
-  "BalanceOil",
+  "Omega 3",
   "Magnesium",
   "Vitamine D3",
   "Vitamine K2",
@@ -84,6 +84,16 @@ const WHY_WE_ASK_CONTENT: Record<string, string> = {
     "Je eetstijl bepaalt welke recepten wel of niet passend zijn, zodat je weekplan aansluit bij hoe je echt wilt eten.",
   "heb-je-je-zinzino-balancetest-gedaan":
     "Als je testdata hebt, kunnen we die meenemen in je persoonlijke advies. Heb je die niet, dan werkt het plan ook gewoon.",
+};
+
+const PHASE_LABELS: Record<1 | 2 | 3 | 4 | 5 | 6 | 7, string> = {
+  1: "Basisprofiel",
+  2: "Eetpatroon",
+  3: "Voorkeuren & context",
+  4: "Spijsvertering & gevoeligheden",
+  5: "Cyclus / levensfase",
+  6: "Doelen",
+  7: "Suppletie & afronding",
 };
 
 export default function OnboardingClient(props: {
@@ -299,6 +309,7 @@ export default function OnboardingClient(props: {
           bowel_regularity: phase4.bowelRegularity,
           bloating: phase4.bloating,
           gut_issue: phase4.gutIssue,
+          legumes_approach: phase4.legumeApproach,
           gut_issue_detail:
             phase4.gutIssue === "ja" ? phase4.gutIssueDetail.trim() || undefined : undefined,
         },
@@ -453,7 +464,7 @@ export default function OnboardingClient(props: {
               Onboarding
             </h1>
             <p className="mt-2 text-sm text-stone-600">
-              Fase {step} van 7 — rustig tempo, heldere keuzes.
+              Fase {step} van 7 · {PHASE_LABELS[step]}
             </p>
           </div>
           <div className="hidden text-right text-xs text-stone-500 sm:block">
@@ -616,7 +627,6 @@ export default function OnboardingClient(props: {
                   setPhase2((p) => ({ ...p, mealsPerDay: e.target.value }))
                 }
               >
-                <option value="2">2</option>
                 <option value="3">3</option>
                 <option value="4">4</option>
               </select>
@@ -819,20 +829,6 @@ export default function OnboardingClient(props: {
 
         {step === 4 ? (
           <form className="mt-8 space-y-5" onSubmit={onSubmitPhase4}>
-            <Field label="Hoe nieuw ben je in deze manier van eten?">
-              <select
-                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-stone-900 outline-none transition focus:border-stone-400 focus:ring-2 focus:ring-stone-200"
-                value={phase4.foodExperience}
-                onChange={(e) =>
-                  setPhase4((p) => ({ ...p, foodExperience: e.target.value }))
-                }
-              >
-                <option value="eerste keer">eerste keer</option>
-                <option value="paar maanden">paar maanden</option>
-                <option value="jaren">al jaren</option>
-              </select>
-            </Field>
-
             <Field label="Stoelgang">
               <select
                 className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-stone-900 outline-none transition focus:border-stone-400 focus:ring-2 focus:ring-stone-200"
@@ -903,12 +899,17 @@ export default function OnboardingClient(props: {
                   setPhase4((p) => ({ ...p, dairyApproach: e.target.value }))
                 }
               >
-                <option value="rauwe melk">rauwe melk</option>
-                <option value="volle bio">volle, biologische zuivel</option>
+                <option value="hoofdzakelijk rauwe zuivel">
+                  Hoofdzakelijk rauwe zuivel
+                </option>
+                <option value="hoofdzakelijk biologische zuivel">
+                  Hoofdzakelijk biologische zuivel
+                </option>
                 <option value="regulier">reguliere supermarkt-zuivel</option>
-                <option value="plantaardig">plantaardig</option>
+                <option value="hoofdzakelijk plantaardige zuivel">
+                  Hoofdzakelijk plantaardige "zuivel"
+                </option>
                 <option value="vermijd ik">vermijd ik</option>
-                <option value="weet niet">weet niet</option>
               </select>
             </Field>
 
@@ -921,10 +922,34 @@ export default function OnboardingClient(props: {
                 }
               >
                 <option value="eet ik gewoon">eet ik gewoon</option>
-                <option value="probeer minder">probeer minder</option>
+                <option value="eet ik minimaal">eet ik minimaal</option>
                 <option value="vermijd ik">vermijd ik</option>
               </select>
             </Field>
+
+            <Field label="Hoe reageer je op peulvruchten?">
+              <select
+                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-stone-900 outline-none transition focus:border-stone-400 focus:ring-2 focus:ring-stone-200"
+                value={phase4.legumeApproach}
+                onChange={(e) =>
+                  setPhase4((p) => ({ ...p, legumeApproach: e.target.value }))
+                }
+              >
+                <option value="eet ik gewoon zonder klachten">
+                  Eet ik gewoon zonder klachten
+                </option>
+                <option value="word ik opgeblazen / winderig van">
+                  Word ik opgeblazen / winderig van
+                </option>
+                <option value="vermijd ik">Vermijd ik</option>
+              </select>
+            </Field>
+
+            <div className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">
+              Darmklachten nu zeggen iets over je huidige belastbaarheid, niet over
+              "voor altijd". Als je darmwand en vertering herstellen, kan tolerantie
+              voor bepaalde producten later verbeteren.
+            </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
               <Field label="Koffie">
@@ -977,6 +1002,11 @@ export default function OnboardingClient(props: {
 
         {step === 5 ? (
           <form className="mt-8 space-y-5" onSubmit={onSubmitPhase5}>
+            <div className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700">
+              Deze cyclusinformatie gebruiken we nu vooral als intake-inzicht voor
+              begeleiding. Een latere versie kan weekmenu's per cyclusfase
+              verfijnen.
+            </div>
             <Field label="Cyclus / levensfase">
               <select
                 className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-stone-900 outline-none transition focus:border-stone-400 focus:ring-2 focus:ring-stone-200"

@@ -232,21 +232,13 @@ export function WeekplanClient({
               </summary>
               <p className="mt-2 leading-relaxed">
                 <strong>Kooksessies</strong> = hoe vaak je per week echt aan het fornuis
-                staat voor een warme of grotere maaltijd (of een batch voor meerdere
-                dagen). Het is <strong>niet</strong> “elke lunch en diner vers koken”.
+                staat voor het <strong>diner</strong> dat je zelf wilt koken.
               </p>
               <p className="mt-2 leading-relaxed">
                 Kies je bijvoorbeeld <strong>3×</strong>, dan vult het plan de week met
-                onder andere <strong>restjes/herhaling</strong>, snelle
-                assembly-maaltijden en — als dat in je profiel staat — je aangegeven
-                frequentie <strong>uit eten</strong> (veld uit eerdere onboarding). Er
-                is <strong>geen apart veld</strong> “1× uit eten” op dit scherm; dat
-                zit in je profiel als je dat daar hebt ingevuld.
-              </p>
-              <p className="mt-2 leading-relaxed">
-                Bij weinig sessies gaan we er in de AI-instructies van uit dat{" "}
-                <strong>dubbel koken / tweede dag hetzelfde gerecht</strong> logisch is,
-                zolang het past bij de filosofie en jouw voorkeuren.
+                bijvoorbeeld <strong>dubbel koken / tweede dag hetzelfde gerecht</strong>,
+                en — als dat in je profiel staat — je aangegeven frequentie{" "}
+                <strong>uit eten</strong> (veld uit eerdere onboarding).
               </p>
             </details>
             <div className="mt-3 flex flex-wrap gap-4 text-sm">

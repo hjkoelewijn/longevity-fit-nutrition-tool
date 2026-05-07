@@ -94,6 +94,86 @@ export function checkAllergiesInMeals(
   return { ok: true };
 }
 
+const GLUTEN_REGEX =
+  /\b(tarwebloem|tarwe|gerst|rogge|spelt|bulgur|couscous|durum|semolina)\b/i;
+const LEGUME_REGEX =
+  /\b(linzen|kikkererwt|kikkererwten|bonen|zwarte bonen|kidneybonen|witte bonen|sojaboon|sojabonen|edamame)\b/i;
+const GUT_TRIGGER_REGEX = /\b(chili|sambal|jalapeno|gefrituurd|frituur)\b/i;
+
+export function checkDigestiveGuardrails(
+  profile: Record<string, unknown>,
+  meals: WeekPlanMeal[],
+): ValidationResult {
+  const gut =
+    profile.gut_status && typeof profile.gut_status === "object"
+      ? (profile.gut_status as Record<string, unknown>)
+      : {};
+  const glutenApproach =
+    typeof profile.gluten_approach === "string"
+      ? profile.gluten_approach.toLowerCase()
+      : "";
+  const legumeApproach =
+    typeof gut.legumes_approach === "string"
+      ? gut.legumes_approach.toLowerCase()
+      : "";
+  const bloating =
+    typeof gut.bloating === "string" ? gut.bloating.toLowerCase() : "";
+  const gutIssue =
+    typeof gut.gut_issue === "string" ? gut.gut_issue.toLowerCase() : "";
+
+  const texts = meals.map((m) => collectTextFromMeal(m));
+  const glutenMeals = texts.filter((t) => GLUTEN_REGEX.test(t)).length;
+  const legumeMeals = texts.filter((t) => LEGUME_REGEX.test(t)).length;
+  const gutTriggerMeals = texts.filter((t) => GUT_TRIGGER_REGEX.test(t)).length;
+
+  if (glutenApproach.includes("vermijd") && glutenMeals > 0) {
+    return {
+      ok: false,
+      code: "digestive_gluten_avoid",
+      message:
+        "Gluten stond op 'vermijd ik', maar het plan bevat nog glutenbronnen.",
+    };
+  }
+  if (glutenApproach.includes("minimaal") && glutenMeals > 2) {
+    return {
+      ok: false,
+      code: "digestive_gluten_minimal",
+      message:
+        "Gluten stond op 'eet ik minimaal', maar het plan bevat te veel glutenmomenten (max 2 per week).",
+    };
+  }
+  if (legumeApproach.includes("vermijd") && legumeMeals > 0) {
+    return {
+      ok: false,
+      code: "digestive_legumes_avoid",
+      message:
+        "Peulvruchten stonden op 'vermijd ik', maar het plan bevat nog peulvruchten.",
+    };
+  }
+  if (
+    legumeApproach.includes("opgeblazen") &&
+    legumeApproach.includes("winderig") &&
+    legumeMeals > 2
+  ) {
+    return {
+      ok: false,
+      code: "digestive_legumes_minimal",
+      message:
+        "Peulvruchten moeten minimaal worden toegepast bij opgeblazen/winderig, maar komen te vaak terug (max 2 per week).",
+    };
+  }
+  if ((bloating === "ja" || gutIssue === "ja") && gutTriggerMeals > 0) {
+    return {
+      ok: false,
+      code: "digestive_mildness",
+      message:
+        "Bij darmklachten vroeg het profiel om milde bereidingen, maar er staan nog pittige of gefrituurde elementen in het plan.",
+    };
+  }
+
+  return { ok: true };
+}
+
 function countCarbMoments(meals: WeekPlanMeal[]): number {
   return meals.filter((m) => m.carb_profile !== "none").length;
 }
