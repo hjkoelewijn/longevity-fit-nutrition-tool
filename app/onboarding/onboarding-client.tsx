@@ -608,7 +608,7 @@ export default function OnboardingClient(props: {
 
         {step === 2 ? (
           <form className="mt-8 space-y-5" onSubmit={onSubmitPhase2}>
-            <Field label="Gemiddeld aantal eetmomenten per dag">
+            <Field label="Eetmomenten als basis voor jouw weekmenu">
               <select
                 className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-stone-900 outline-none transition focus:border-stone-400 focus:ring-2 focus:ring-stone-200"
                 value={phase2.mealsPerDay}
@@ -619,8 +619,12 @@ export default function OnboardingClient(props: {
                 <option value="2">2</option>
                 <option value="3">3</option>
                 <option value="4">4</option>
-                <option value="5+">5+</option>
               </select>
+              <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+                Bij Longevity Fit adviseren we maximaal 4 eetmomenten per dag.
+                Dit wordt uitgelegd in de kennisbank. We gaan uit van 3
+                hoofdmaaltijden en een snack.
+              </div>
             </Field>
 
             <Field label="Ontbijt-routine">
