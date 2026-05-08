@@ -1,14 +1,25 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    const error = searchParams.get("error");
+    const reason = searchParams.get("reason");
+    if (error && reason) {
+      setStatus("error");
+      setMessage(`Inloggen is niet gelukt (${reason}).`);
+    }
+  }, [searchParams]);
 
   function getNormalizedEmail() {
     const fromState = email.trim().toLowerCase();

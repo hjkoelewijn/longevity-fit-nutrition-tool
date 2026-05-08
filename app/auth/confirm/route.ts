@@ -13,8 +13,8 @@ const VALID_EMAIL_OTP_TYPES = new Set([
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const tokenHash = searchParams.get("token_hash");
-  const type = searchParams.get("type");
+  const tokenHash = searchParams.get("token_hash") ?? searchParams.get("token");
+  const type = searchParams.get("type") ?? "magiclink";
   const next = searchParams.get("next") ?? "/dashboard";
 
   const redirectUrl = new URL(next, origin).toString();
@@ -49,10 +49,11 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // OTP / magic-link flow: ?token_hash=...&type=...
-  if (tokenHash && type) {
+  // OTP / magic-link flow: token_hash/token + type
+  if (tokenHash) {
     const otpType = VALID_EMAIL_OTP_TYPES.has(type) ? type : "magiclink";
     const { error } = await supabase.auth.verifyOtp({
+      // Supabase expects a specific union; we accept multiple via runtime string.
       type: otpType as "magiclink",
       token_hash: tokenHash,
     });
