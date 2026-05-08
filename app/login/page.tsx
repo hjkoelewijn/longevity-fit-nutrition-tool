@@ -10,6 +10,16 @@ export default function LoginPage() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
 
+  function getNormalizedEmail() {
+    const fromState = email.trim().toLowerCase();
+    if (fromState) return fromState;
+    const fromDom =
+      typeof document !== "undefined"
+        ? (document.getElementById("email") as HTMLInputElement | null)?.value?.trim().toLowerCase()
+        : "";
+    return fromDom || "";
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("loading");
@@ -17,7 +27,12 @@ export default function LoginPage() {
 
     const supabase = createClient();
     const redirectTo = `${window.location.origin}/auth/confirm?next=/dashboard`;
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = getNormalizedEmail();
+    if (!normalizedEmail) {
+      setStatus("error");
+      setMessage("Vul eerst je e-mailadres in.");
+      return;
+    }
 
     const { error } = await supabase.auth.signInWithOtp({
       email: normalizedEmail,
@@ -50,7 +65,12 @@ export default function LoginPage() {
 
     const supabase = createClient();
     const redirectTo = `${window.location.origin}/auth/confirm?next=/dashboard`;
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = getNormalizedEmail();
+    if (!normalizedEmail) {
+      setStatus("error");
+      setMessage("Vul eerst je e-mailadres in.");
+      return;
+    }
 
     const { error } = await supabase.auth.signInWithOtp({
       email: normalizedEmail,
@@ -78,7 +98,12 @@ export default function LoginPage() {
     setMessage("");
 
     const supabase = createClient();
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = getNormalizedEmail();
+    if (!normalizedEmail) {
+      setStatus("error");
+      setMessage("Vul eerst je e-mailadres in.");
+      return;
+    }
     const { error } = await supabase.auth.signInWithPassword({
       email: normalizedEmail,
       password,
