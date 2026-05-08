@@ -17,8 +17,9 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type") ?? "magiclink";
   const isFirstTime = searchParams.get("first_time") === "1";
   const next = isFirstTime ? "/auth/set-password" : (searchParams.get("next") ?? "/dashboard");
+  const configuredAppOrigin = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/+$/, "");
   const appOrigin =
-    process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/+$/, "") || origin;
+    configuredAppOrigin || (origin.includes(".vercel.app") ? "https://app.longevityfit.nl" : origin);
 
   const redirectUrl = new URL(next, appOrigin).toString();
 

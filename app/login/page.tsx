@@ -45,6 +45,9 @@ export default function LoginPage() {
     if (configured) {
       return configured.replace(/\/+$/, "");
     }
+    if (window.location.hostname.endsWith(".vercel.app")) {
+      return "https://app.longevityfit.nl";
+    }
     return window.location.origin;
   }
 
