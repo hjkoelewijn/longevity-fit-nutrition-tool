@@ -17,11 +17,46 @@ export default function LoginPage() {
 
     const supabase = createClient();
     const redirectTo = `${window.location.origin}/auth/confirm?next=/dashboard`;
+    const normalizedEmail = email.trim().toLowerCase();
 
     const { error } = await supabase.auth.signInWithOtp({
-      email,
+      email: normalizedEmail,
       options: {
         emailRedirectTo: redirectTo,
+        shouldCreateUser: false,
+      },
+    });
+
+    if (error) {
+      setStatus("error");
+      if (/signups?\s+not\s+allowed|user not found/i.test(error.message)) {
+        setMessage(
+          "We vinden nog geen account met dit e-mailadres. Gebruik inloggen met wachtwoord of laat je account eerst klaarzetten.",
+        );
+      } else {
+        setMessage(error.message);
+      }
+      return;
+    }
+
+    setStatus("success");
+    setMessage("Check je e-mail. We hebben je een veilige inloglink gestuurd.");
+  }
+
+  async function handleFirstTimeLink(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setStatus("loading");
+    setMessage("");
+
+    const supabase = createClient();
+    const redirectTo = `${window.location.origin}/auth/confirm?next=/dashboard`;
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email: normalizedEmail,
+      options: {
+        emailRedirectTo: redirectTo,
+        shouldCreateUser: true,
       },
     });
 
@@ -32,7 +67,9 @@ export default function LoginPage() {
     }
 
     setStatus("success");
-    setMessage("Check je e-mail. We hebben je een veilige inloglink gestuurd.");
+    setMessage(
+      "Check je e-mail. We hebben je een activatielink gestuurd. Na je eerste login kun je een wachtwoord instellen.",
+    );
   }
 
   async function handlePasswordLogin(event: FormEvent<HTMLFormElement>) {
@@ -41,8 +78,9 @@ export default function LoginPage() {
     setMessage("");
 
     const supabase = createClient();
+    const normalizedEmail = email.trim().toLowerCase();
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: normalizedEmail,
       password,
     });
 
@@ -113,11 +151,27 @@ export default function LoginPage() {
 
         <div className="mt-6 border-t border-stone-200 pt-6">
           <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
-            Geen wachtwoord bij de hand?
+            Eerste keer inloggen?
           </p>
           <p className="mt-2 text-sm text-stone-600">
-            Gebruik dan een eenmalige inloglink via e-mail.
+            Gebruik een activatielink via e-mail. Daarna kun je met wachtwoord blijven inloggen.
           </p>
+          <form onSubmit={handleFirstTimeLink} className="mt-4 space-y-4">
+            <button
+              type="submit"
+              disabled={status === "loading"}
+              className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm font-medium text-stone-900 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {status === "loading" ? "Versturen..." : "Stuur activatielink"}
+            </button>
+          </form>
+        </div>
+
+        <div className="mt-6 border-t border-stone-200 pt-6">
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
+            Geen wachtwoord bij de hand?
+          </p>
+          <p className="mt-2 text-sm text-stone-600">Gebruik dan een eenmalige inloglink via e-mail.</p>
 
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             <button
