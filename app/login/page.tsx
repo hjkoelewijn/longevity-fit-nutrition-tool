@@ -135,6 +135,13 @@ export default function LoginPage() {
           Log in met je e-mailadres en wachtwoord. Op dit apparaat blijf je daarna gewoon
           ingelogd.
         </p>
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-semibold">Eerste keer?</p>
+          <p className="mt-1">
+            Vul eerst alleen je e-mailadres in en klik onderaan op{" "}
+            <strong>Stuur activatielink</strong>. Je hoeft dan nog geen wachtwoord in te vullen.
+          </p>
+        </div>
 
         <form onSubmit={handlePasswordLogin} className="mt-8 space-y-4">
           <label className="block text-sm font-medium text-stone-700" htmlFor="email">
@@ -154,6 +161,9 @@ export default function LoginPage() {
           <label className="block text-sm font-medium text-stone-700" htmlFor="password">
             Wachtwoord
           </label>
+          <p className="-mt-2 text-xs text-stone-500">
+            Alleen invullen als je al een wachtwoord hebt.
+          </p>
           <input
             id="password"
             name="password"
@@ -179,7 +189,8 @@ export default function LoginPage() {
             Eerste keer inloggen?
           </p>
           <p className="mt-2 text-sm text-stone-600">
-            Gebruik een activatielink via e-mail. Daarna kun je met wachtwoord blijven inloggen.
+            Stap 1: vul hierboven alleen je e-mailadres in. Stap 2: klik op activatielink. Pas
+            daarna log je in met wachtwoord.
           </p>
           <form onSubmit={handleFirstTimeLink} className="mt-4 space-y-4">
             <button
