@@ -20,13 +20,21 @@ export default function LoginPage() {
     return fromDom || "";
   }
 
+  function getRedirectBaseUrl() {
+    const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
+    if (configured) {
+      return configured.replace(/\/+$/, "");
+    }
+    return window.location.origin;
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("loading");
     setMessage("");
 
     const supabase = createClient();
-    const redirectTo = `${window.location.origin}/auth/confirm?next=/dashboard`;
+    const redirectTo = `${getRedirectBaseUrl()}/auth/confirm?next=/dashboard`;
     const normalizedEmail = getNormalizedEmail();
     if (!normalizedEmail) {
       setStatus("error");
@@ -64,7 +72,7 @@ export default function LoginPage() {
     setMessage("");
 
     const supabase = createClient();
-    const redirectTo = `${window.location.origin}/auth/confirm?next=/dashboard`;
+    const redirectTo = `${getRedirectBaseUrl()}/auth/confirm?next=/dashboard`;
     const normalizedEmail = getNormalizedEmail();
     if (!normalizedEmail) {
       setStatus("error");
@@ -135,13 +143,6 @@ export default function LoginPage() {
           Log in met je e-mailadres en wachtwoord. Op dit apparaat blijf je daarna gewoon
           ingelogd.
         </p>
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <p className="font-semibold">Eerste keer?</p>
-          <p className="mt-1">
-            Vul eerst alleen je e-mailadres in en klik onderaan op{" "}
-            <strong>Stuur activatielink</strong>. Je hoeft dan nog geen wachtwoord in te vullen.
-          </p>
-        </div>
 
         <form onSubmit={handlePasswordLogin} className="mt-8 space-y-4">
           <label className="block text-sm font-medium text-stone-700" htmlFor="email">
