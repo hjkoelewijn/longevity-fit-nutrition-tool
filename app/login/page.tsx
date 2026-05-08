@@ -12,6 +12,16 @@ export default function LoginPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    if (code) {
+      const next = params.get("next") ?? "/dashboard";
+      const forward = new URL("/auth/confirm", window.location.origin);
+      forward.searchParams.set("code", code);
+      forward.searchParams.set("next", next);
+      window.location.replace(forward.toString());
+      return;
+    }
+
     const error = params.get("error");
     const reason = params.get("reason");
     if (error && reason) {
