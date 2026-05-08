@@ -12,12 +12,25 @@ const VALID_EMAIL_OTP_TYPES = new Set([
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
+  const configuredAppOrigin = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/+$/, "");
+
+  // Critical for auth cookies: if confirm lands on a Vercel hostname but
+  // our canonical app lives on a custom domain, first hop to that domain
+  // with the exact same params. Then exchange code/token there so cookies
+  // are issued for the correct host.
+  if (configuredAppOrigin && origin !== configuredAppOrigin && origin.includes(".vercel.app")) {
+    const canonicalConfirmUrl = new URL("/auth/confirm", configuredAppOrigin);
+    searchParams.forEach((value, key) => {
+      canonicalConfirmUrl.searchParams.set(key, value);
+    });
+    return NextResponse.redirect(canonicalConfirmUrl.toString());
+  }
+
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash") ?? searchParams.get("token");
   const type = searchParams.get("type") ?? "magiclink";
   const isFirstTime = searchParams.get("first_time") === "1";
   const next = isFirstTime ? "/auth/set-password" : (searchParams.get("next") ?? "/dashboard");
-  const configuredAppOrigin = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/+$/, "");
   const appOrigin =
     configuredAppOrigin || (origin.includes(".vercel.app") ? "https://app.longevityfit.nl" : origin);
 
