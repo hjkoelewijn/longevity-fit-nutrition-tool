@@ -70,10 +70,10 @@ export default async function DashboardPage(props: {
               <strong>Weekmenu:</strong> hier maak je je persoonlijke weekplan, recepten en boodschappenlijst.
             </li>
             <li>
-              <strong>Inspiratie:</strong> hier vind je extra recepten en ideeën per soort maaltijd.
+              <strong>Inspiratie:</strong> na het runnen van weekmenu&apos;s vind je hier een overzicht van alle recepten bij elkaar.
             </li>
             <li>
-              <strong>Richtlijnen:</strong> hier lees je de praktische Longevity Fit richtlijnen als naslag.
+              <strong>Richtlijnen:</strong> dit zijn de basis voedingsrichtlijnen van Longevity Fit.
             </li>
             <li>
               <strong>Kennisbank:</strong> hier leer je wat er in je lichaam gebeurt en waarom onze keuzes werken.

@@ -3,6 +3,7 @@
 **Doel:** complete kennisbank-pagina voor de Longevity Fit voedingstool, met de eerste actieve module (Hormonen) en een visuele preview van wat er nog komt.
 
 **Wat erin zit:**
+
 1. Kennisbank-overzichtspagina met intro, actieve module en preview-kaarten van toekomstige categorieën
 2. De eerste leermodule "Hormonen, je lichaam in beweging" (alleen basis-tekst)
 
@@ -13,15 +14,19 @@
 Sla in dit project twee documenten op:
 
 **Bestand 1 (actieve versie voor de tool):**
+
 ```
 /docs/kennisbank/cursor-prompt-kennisbank-en-hormonen-v3.md
 ```
+
 Dit is het document hieronder. Gebruik dit voor de bouw.
 
 **Bestand 2 (referentie voor later):**
+
 ```
 /docs/kennisbank/cursor-prompt-kennisbank-en-hormonen-v3-met-uitklap.md
 ```
+
 Dit is de uitgebreide versie met 10 uitklap-blokken voor verdieping bij de hormonen-module. Bewaar voor later, wanneer we de verdieping toevoegen.
 
 **Werkafspraak:** wijzigingen aan de basis-tekst altijd in beide bestanden synchroon doorvoeren.
@@ -54,15 +59,15 @@ De pagina is opgebouwd uit drie blokken:
 
 Welkom in de Longevity Fit Kennisbank.
 
-Deze plek vullen we de komende weken stap voor stap met alles wat jij nodig hebt om te begrijpen wat er in jouw lichaam speelt en waarom de keuzes binnen Longevity Fit zo werken. Geen losse weetjes, geen knip-en-plak voedingstips. Wel de achtergrond die jou helpt om bewuste keuzes te maken die bij jouw lichaam in deze fase passen.
+Deze plek vullen we de komende weken stap voor stap met alles wat jij nodig hebt om te begrijpen wat er in jouw lichaam speelt en waarom de keuzes binnen Longevity Fit zo werken. Geen losse weetjes en knip-en-plak voedingstips. Wel de achtergrond die jou helpt om bewuste keuzes te maken die bij jouw lichaam in deze fase passen.
 
 We beginnen met de basis. Wat gebeurt er eigenlijk in je lichaam vanaf je 40e? Welke hormonen schommelen, wat doet dat met je energie, je slaap, je gewicht, je hoofd? En waarom werkt het fundament dat we in Longevity Fit leggen zo goed om die klachten te minimaliseren?
 
 In de komende weken komen daar steeds meer stukken bij. Over je lever, je darmen, hoe je eet, stress, de waarheid over zuivel en suiker, en wat goede vetten echt voor je doen. Allemaal in begrijpelijke taal, met praktische handvatten.
 
-Onze missie: dat jij over een paar weken niet alleen weet wat je moet eten, maar ook waarom. Dat je begrijpt wat je voelt en waarom je het voelt. Dat je je lichaam herkent in plaats van ertegen vecht.
+Onze missie: dat jij over een paar weken niet alleen weet wat je moet eten, maar ook waarom. Dat je begrijpt wat je voelt en waarom je het voelt. 
 
-Want de tweede helft van je leven mag de beste worden. Niet ondanks deze fase. Maar door wat je nu doet.
+Want de tweede helft van je leven mag de beste zijn. Door wat je NU doet. 
 
 ---
 
@@ -73,6 +78,7 @@ Want de tweede helft van je leven mag de beste worden. Niet ondanks deze fase. M
 Eén actieve categorie-kaart met daarin de hormonen-module:
 
 **Categorie-kaart 1: Wat gebeurt er in je 40+ lichaam?**
+
 - Korte omschrijving: De basis voor alles wat je daarna leest. Hier begrijp je wat er in jouw lichaam gebeurt en waarom Longevity Fit doet wat het doet.
 - Modules in deze categorie:
   - **Hormonen, je lichaam in beweging** ← klikbaar, leidt naar de module-pagina
@@ -390,6 +396,7 @@ const kennisbankCategorieen: KennisbankCategorie[] = [
 - Sectie-subtitel: Work Sans 16px regular, lichtere kleur
 
 **Actieve categorie-kaart (`KennisbankCategorieKaart`):**
+
 - Witte achtergrond `#FFFFFF`
 - Subtiele schaduw
 - Goud accent `#D4AF37` (linker rand of icoontje)
@@ -400,6 +407,7 @@ const kennisbankCategorieen: KennisbankCategorie[] = [
 - Modules eronder als klikbare links in goud
 
 **Preview-categorie-kaart (`KennisbankPreviewKaart`):**
+
 - Witte achtergrond `#FFFFFF` met iets verminderde opacity (0.85) of zachtere kleur `#F5EFE6`
 - Geen schaduw of zachtere schaduw dan de actieve kaart
 - Geen cursor pointer
@@ -431,13 +439,13 @@ const kennisbankCategorieen: KennisbankCategorie[] = [
 7. Maak component `src/components/KennisbankPreviewKaart.tsx` (niet klikbaar, andere styling)
 8. Maak component `src/components/LeestijdBadge.tsx`
 9. Voeg routes toe:
-    - `/kennisbank`
+  - `/kennisbank`
     - `/kennisbank/40plus-lichaam/hormonen`
 10. Verwijder eventueel bestaande modules uit de zichtbare kennisbank-weergave (lever, stress, hoe je eet) zodat alleen de hormonen-module nu actief is. Bewaar deze wel in de codebase met een vlag voor later.
 11. Test dat preview-kaarten visueel duidelijk anders zijn dan actieve kaarten zonder dat het saai wordt
 12. Test op mobiel
 13. Voeg analytics-events toe op:
-    - Bezoek aan kennisbank-pagina
+  - Bezoek aan kennisbank-pagina
     - Klik op een actieve module
     - Tijd doorgebracht op een module-pagina
     - Optioneel: hoveren over preview-kaarten (om interesse te meten)
@@ -450,9 +458,9 @@ Wanneer een nieuwe module wordt toegevoegd:
 
 1. Voeg de module-tekst toe als data-bestand
 2. Update `src/data/kennisbank.ts`:
-   - Verplaats de module-entry van een preview-categorie naar een actieve categorie (of activeer de hele categorie)
-   - Zet `klikbaar: true` en voeg het pad toe
-   - Eventueel `status: 'preview'` veranderen naar `status: 'actief'`
+  - Verplaats de module-entry van een preview-categorie naar een actieve categorie (of activeer de hele categorie)
+  - Zet `klikbaar: true` en voeg het pad toe
+  - Eventueel `status: 'preview'` veranderen naar `status: 'actief'`
 3. Voeg de footer-disclaimer toe onderaan de module
 4. Test of de leestijd-schatting klopt
 

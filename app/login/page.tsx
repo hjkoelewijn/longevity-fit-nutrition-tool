@@ -69,10 +69,11 @@ export default function LoginPage() {
         </div>
         <h1 className="mt-6 text-3xl font-semibold text-stone-900">Inloggen</h1>
         <p className="mt-2 text-sm text-stone-600">
-          Vul je e-mailadres in. Je ontvangt direct een veilige login-link.
+          Log in met je e-mailadres en wachtwoord. Op dit apparaat blijf je daarna gewoon
+          ingelogd.
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+        <form onSubmit={handlePasswordLogin} className="mt-8 space-y-4">
           <label className="block text-sm font-medium text-stone-700" htmlFor="email">
             E-mailadres
           </label>
@@ -87,40 +88,44 @@ export default function LoginPage() {
             className="w-full rounded-xl border border-stone-300 px-4 py-3 text-stone-900 outline-none transition focus:border-stone-400 focus:ring-2 focus:ring-stone-200"
           />
 
+          <label className="block text-sm font-medium text-stone-700" htmlFor="password">
+            Wachtwoord
+          </label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            required
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="••••••••"
+            className="w-full rounded-xl border border-stone-300 px-4 py-3 text-stone-900 outline-none transition focus:border-stone-400 focus:ring-2 focus:ring-stone-200"
+          />
+
           <button
             type="submit"
             disabled={status === "loading"}
             className="w-full rounded-xl bg-stone-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {status === "loading" ? "Versturen..." : "Stuur inloglink"}
+            {status === "loading" ? "Inloggen..." : "Inloggen"}
           </button>
         </form>
 
         <div className="mt-6 border-t border-stone-200 pt-6">
           <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
-            Alternatief (dev)
+            Geen wachtwoord bij de hand?
           </p>
-          <form onSubmit={handlePasswordLogin} className="mt-3 space-y-4">
-            <label className="block text-sm font-medium text-stone-700" htmlFor="password">
-              Wachtwoord
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="••••••••"
-              className="w-full rounded-xl border border-stone-300 px-4 py-3 text-stone-900 outline-none transition focus:border-stone-400 focus:ring-2 focus:ring-stone-200"
-            />
+          <p className="mt-2 text-sm text-stone-600">
+            Gebruik dan een eenmalige inloglink via e-mail.
+          </p>
 
+          <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             <button
               type="submit"
               disabled={status === "loading"}
               className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm font-medium text-stone-900 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {status === "loading" ? "Inloggen..." : "Inloggen met wachtwoord"}
+              {status === "loading" ? "Versturen..." : "Stuur inloglink"}
             </button>
           </form>
         </div>
