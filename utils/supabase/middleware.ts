@@ -75,7 +75,8 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/auth");
+  const isSetPasswordPage = pathname.startsWith("/auth/set-password");
+  const isAuthPage = pathname.startsWith("/login") || (pathname.startsWith("/auth") && !isSetPasswordPage);
   const isOnboardingPage = pathname.startsWith("/onboarding");
   const isProtectedPage =
     pathname.startsWith("/dashboard") ||
@@ -89,6 +90,12 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/weekplan");
 
   if (isProtectedPage && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  if (isSetPasswordPage && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
