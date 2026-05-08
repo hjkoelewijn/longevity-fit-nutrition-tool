@@ -15,9 +15,12 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash") ?? searchParams.get("token");
   const type = searchParams.get("type") ?? "magiclink";
-  const next = searchParams.get("next") ?? "/dashboard";
+  const isFirstTime = searchParams.get("first_time") === "1";
+  const next = isFirstTime ? "/auth/set-password" : (searchParams.get("next") ?? "/dashboard");
+  const appOrigin =
+    process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/+$/, "") || origin;
 
-  const redirectUrl = new URL(next, origin).toString();
+  const redirectUrl = new URL(next, appOrigin).toString();
 
   const response = NextResponse.redirect(redirectUrl);
 
@@ -45,7 +48,7 @@ export async function GET(request: NextRequest) {
       return response;
     }
     return NextResponse.redirect(
-      `${origin}/login?error=auth_failed&reason=${encodeURIComponent(error.message)}`,
+      `${appOrigin}/login?error=auth_failed&reason=${encodeURIComponent(error.message)}`,
     );
   }
 
@@ -62,9 +65,9 @@ export async function GET(request: NextRequest) {
       return response;
     }
     return NextResponse.redirect(
-      `${origin}/login?error=auth_failed&reason=${encodeURIComponent(error.message)}`,
+      `${appOrigin}/login?error=auth_failed&reason=${encodeURIComponent(error.message)}`,
     );
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth_failed&reason=missing_token`);
+  return NextResponse.redirect(`${appOrigin}/login?error=auth_failed&reason=missing_token`);
 }

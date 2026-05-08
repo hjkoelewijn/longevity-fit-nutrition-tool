@@ -92,7 +92,7 @@ export default function LoginPage() {
     setMessage("");
 
     const supabase = createClient();
-    const redirectTo = `${getRedirectBaseUrl()}/auth/confirm?next=/auth/set-password`;
+    const redirectTo = `${getRedirectBaseUrl()}/auth/confirm?next=/auth/set-password&first_time=1`;
     const normalizedEmail = getNormalizedEmail();
     if (!normalizedEmail) {
       setStatus("error");
