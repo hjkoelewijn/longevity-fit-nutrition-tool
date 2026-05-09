@@ -69,7 +69,7 @@ Onze aanpak combineert drie kennis-velden:
 
 **Orthomoleculaire voedingsleer**
 
-De wetenschap die kijkt naar wat het lichaam op celniveau nodig heeft om optimaal te functioneren. Niet alleen "voldoende" voeding, maar de juiste voedingsstoffen in de juiste hoeveelheden. Wij leunen hier sterk op het werk van Rieneke Dijkinga, een Nederlandse autoriteit op het gebied van orthomoleculaire voeding en de hormonale gezondheid van vrouwen.
+De wetenschap die kijkt naar wat het lichaam op celniveau nodig heeft om optimaal te functioneren. Niet alleen "voldoende" voeding, maar de juiste voedingsstoffen in de juiste hoeveelheden. Wij zijn geinspireerd door het werk van Rieneke Dijkinga, een Nederlandse autoriteit op het gebied van orthomoleculaire voeding en de hormonale gezondheid van vrouwen.
 
 **Functionele geneeskunde**
 
@@ -77,7 +77,7 @@ Een benadering die het hele systeem ziet, niet alleen losse symptomen. Waarom he
 
 **Pharmaconutrition**
 
-De wetenschap dat voeding kan werken zoals medicijnen werken. Bepaalde voedingsstoffen kunnen ontstekingen dempen, hormonen ondersteunen, herstel versnellen. Dr. Paul Clayton, biochemicus en wetenschappelijk onderzoeker, heeft hier baanbrekend werk in verricht. Zijn inzichten over chronische ontsteking en de rol van voeding daarin zijn fundamenteel voor onze aanpak.
+De wetenschap dat voeding kan werken zoals medicijnen werken. Bepaalde voedingsstoffen kunnen ontstekingen dempen, hormonen ondersteunen, herstel versnellen. Op het gebied van chronische ontsteking en de rol van voeding daarin laten wij ons inspireren door het werk van Dr. Paul Clayton, biochemicus en wetenschappelijk onderzoeker.
 
 Daarnaast verwerken wij in onze tool de klinische en praktische ervaring van ons team. Bijna 30 jaar ervaring van Christina in de fitnessbranche (ex-Nike Master Trainer), ervaringsdeskundigheid van Heidy en 8 jaar Studio C Online. Samen hebben we met duizenden 40+ vrouwen gewerkt. Die praktijkkennis vertalen we naar dagelijkse keuzes die haalbaar zijn voor vrouwen met weinig tijd, hoge standaarden en een vol leven.
 
@@ -92,7 +92,7 @@ Daarnaast verwerken wij in onze tool de klinische en praktische ervaring van ons
 
 Deze voedingstool is jouw dagelijkse hulp bij eten. Recepten, weekmenu's, boodschappenlijsten, en uitleg over wat voeding doet in je lichaam.
 
-Het is geen vervanging van medisch advies. Heb je hormonale klachten, een bekende aandoening, gebruik je medicatie, of twijfel je over iets, raadpleeg dan altijd een arts of therapeut. Binnen ons netwerk zijn ook therapeut Liane en Margreet (orthomoleculair adviseur) beschikbaar voor verdiepende vragen. Margreet biedt daarnaast een 1-op-1 consult van een uur, waar deelnemers vaak veel aan hebben. Gaat het om diepere problematiek waarvoor meerdere 1-op-1 sessies nodig zijn, dan kijken we samen naar een passende follow-up via een apart traject.
+Het is geen vervanging van medisch advies. Heb je hormonale klachten, een bekende aandoening, gebruik je medicatie, of twijfel je over iets, raadpleeg dan altijd een arts of therapeut. Binnen ons netwerk zijn ook hormoontherapeut Liane en Margreet (orthomoleculair adviseur en stress counselor) beschikbaar voor verdiepende vragen. Margreet biedt daarnaast een 1-op-1 consult van een uur, waar deelnemers vaak veel aan hebben. Gaat het om diepere problematiek waarvoor meerdere 1-op-1 sessies nodig zijn, dan kijken we samen naar een passende follow-up via een apart traject.
 
 **Tot slot**
 
