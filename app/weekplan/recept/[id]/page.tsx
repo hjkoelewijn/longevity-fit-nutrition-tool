@@ -25,16 +25,26 @@ function servingsLabel(slot: string, servings: number): string {
 
 function formatAmount(amount: string): string {
   const raw = amount.trim();
-  if (!raw) return "naar smaak";
+  if (!raw) return "";
   if (/^\d+([.,]\d+)?$/.test(raw)) {
     return `${raw} g`;
   }
   return raw;
 }
 
+function inferAmountFromName(name: string): string {
+  const n = name.toLowerCase();
+  if (/(zout|peper|kaneel|komijn|kurkuma|paprika|oregano|tijm|kruiden|specerij)/.test(n)) return "1 tl";
+  if (/(olie|olijfolie|azijn|sojasaus|tamari|honing|mosterd|citroensap|limoensap)/.test(n)) return "1 el";
+  if (/(kip|zalm|vis|gehakt|tofu|tempeh|biefstuk|ei|eieren|bonen|linzen|kikkererwten)/.test(n)) return "150 g";
+  if (/(rucola|sla|spinazie|boerenkool|andijvie|paksoi|groente|courgette|paprika|broccoli|wortel|ui)/.test(n)) return "100 g";
+  if (/(rijst|quinoa|havermout|pasta|aardappel|zoete aardappel)/.test(n)) return "75 g";
+  if (/(yoghurt|kwark|melk|kefir)/.test(n)) return "200 ml";
+  return "100 g";
+}
+
 function formatAmountWithIngredient(name: string, amount: string): string {
   const raw = amount.trim();
-  if (!raw) return "naar smaak";
   const ingredient = name.toLowerCase();
   const spiceLike =
     /(zout|peper|kaneel|komijn|kurkuma|paprika|oregano|tijm|venkel|specerij|kruiden|knoflookpoeder|uienpoeder|chilipoeder)/.test(
@@ -44,6 +54,11 @@ function formatAmountWithIngredient(name: string, amount: string): string {
     /(olijfolie|olie|azijn|citroensap|limoensap|sojasaus|tamari|honing|mosterd)/.test(
       ingredient,
     );
+
+  if (!raw || raw.toLowerCase() === "naar smaak") {
+    // Keep spices subtle; infer concrete unit/amount for regular ingredients.
+    return spiceLike ? "1 tl" : inferAmountFromName(name);
+  }
 
   const asNumber = Number(raw.replace(",", "."));
   if (Number.isFinite(asNumber) && /^\d+([.,]\d+)?$/.test(raw)) {

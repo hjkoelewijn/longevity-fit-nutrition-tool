@@ -31,6 +31,17 @@ function hasDetails(meal: WeekPlanMeal): boolean {
   return Array.isArray(meal.ingredients) && meal.ingredients.length > 0 && Array.isArray(meal.steps) && meal.steps.length > 0;
 }
 
+function inferAmountFromName(name: string): string {
+  const n = name.toLowerCase();
+  if (/(zout|peper|kaneel|komijn|kurkuma|paprika|oregano|tijm|kruiden|specerij)/.test(n)) return "1 tl";
+  if (/(olie|olijfolie|azijn|sojasaus|tamari|honing|mosterd|citroensap|limoensap)/.test(n)) return "1 el";
+  if (/(kip|zalm|vis|gehakt|tofu|tempeh|biefstuk|ei|eieren|bonen|linzen|kikkererwten)/.test(n)) return "150 g";
+  if (/(rucola|sla|spinazie|boerenkool|andijvie|paksoi|groente|courgette|paprika|broccoli|wortel|ui)/.test(n)) return "100 g";
+  if (/(rijst|quinoa|havermout|pasta|aardappel|zoete aardappel)/.test(n)) return "75 g";
+  if (/(yoghurt|kwark|melk|kefir)/.test(n)) return "200 ml";
+  return "100 g";
+}
+
 export async function POST(request: Request) {
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -139,8 +150,8 @@ ${JSON.stringify(meal)}
           }))
           .map((ing) => {
             const amountRaw = ing.amount;
-            if (!amountRaw) {
-              return { ...ing, amount: "naar smaak" };
+            if (!amountRaw || amountRaw.toLowerCase() === "naar smaak") {
+              return { ...ing, amount: inferAmountFromName(ing.name) };
             }
             if (/^\d+([.,]\d+)?$/.test(amountRaw)) {
               return { ...ing, amount: `${amountRaw} g` };
