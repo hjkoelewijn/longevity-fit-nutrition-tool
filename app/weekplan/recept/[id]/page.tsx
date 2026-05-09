@@ -108,6 +108,8 @@ export default async function WeekplanReceptPage(props: {
   if (!meal) {
     notFound();
   }
+  const ingredients = Array.isArray(meal.ingredients) ? meal.ingredients : [];
+  const steps = Array.isArray(meal.steps) ? meal.steps : [];
   const dayIndex = payload.days.findIndex((d) =>
     [d.meals.ontbijt, d.meals.lunch, d.meals.diner, ...(d.tussendoortjes ?? [])].some(
       (m) => m.id === meal.id,
@@ -174,30 +176,45 @@ export default async function WeekplanReceptPage(props: {
 
           <section className="mt-8">
             <h2 className="text-lg font-semibold text-stone-900">Ingrediënten</h2>
-            <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-stone-800">
-              {meal.ingredients.map((ing, i) => (
-                <li key={i}>
-                  <span className="font-medium">{ing.name}</span>{" "}
-                  <span className="text-stone-600">
-                    {formatAmountWithIngredient(ing.name, ing.amount)}
-                  </span>
-                  {ing.note ? (
-                    <span className="text-stone-500"> ({ing.note})</span>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
+            {ingredients.length > 0 ? (
+              <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-stone-800">
+                {ingredients.map((ing, i) => (
+                  <li key={i}>
+                    <span className="font-medium">{String(ing.name ?? "Ingrediënt")}</span>{" "}
+                    <span className="text-stone-600">
+                      {formatAmountWithIngredient(
+                        String(ing.name ?? "Ingrediënt"),
+                        String(ing.amount ?? ""),
+                      )}
+                    </span>
+                    {ing.note ? (
+                      <span className="text-stone-500"> ({String(ing.note)})</span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 text-sm text-stone-600">
+                Ingrediënten worden nog aangevuld. Ververs deze pagina over 1-2 minuten.
+              </p>
+            )}
           </section>
 
           <section className="mt-8">
             <h2 className="text-lg font-semibold text-stone-900">Bereiding</h2>
-            <ol className="mt-3 list-inside list-decimal space-y-2 text-sm text-stone-800">
-              {meal.steps.map((step, i) => (
-                <li key={i} className="pl-1">
-                  {step}
-                </li>
-              ))}
-            </ol>
+            {steps.length > 0 ? (
+              <ol className="mt-3 list-inside list-decimal space-y-2 text-sm text-stone-800">
+                {steps.map((step, i) => (
+                  <li key={i} className="pl-1">
+                    {String(step)}
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="mt-3 text-sm text-stone-600">
+                Bereidingsstappen worden nog aangevuld. Ververs deze pagina over 1-2 minuten.
+              </p>
+            )}
           </section>
 
           <div className="mt-10 flex flex-wrap gap-4 border-t border-stone-200 pt-8 text-sm">

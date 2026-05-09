@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -12,6 +15,14 @@ const NAV_ITEMS = [
 ];
 
 export function AppTopNav() {
+  const pathname = usePathname();
+  const hideOnAuthOrOnboarding =
+    pathname.startsWith("/login") || pathname.startsWith("/auth") || pathname.startsWith("/onboarding");
+
+  if (hideOnAuthOrOnboarding) {
+    return null;
+  }
+
   return (
     <header className="sticky top-0 z-40 border-b border-stone-200 bg-[#FAF7F2]/95 backdrop-blur">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6">

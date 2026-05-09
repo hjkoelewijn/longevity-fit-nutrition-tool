@@ -25,6 +25,7 @@ type Body = {
   week_start_iso?: string;
   cook_sessions_per_week?: 3 | 5 | 7;
   snacks_enabled?: boolean;
+  quality_mode?: boolean;
 };
 
 function normalizeIngredientAmounts(payload: WeekPlanPayload) {
@@ -232,11 +233,16 @@ export async function POST(request: Request) {
       repeatPolicy,
     });
 
-    const model =
-      process.env.ANTHROPIC_MODEL ??
-      (process.env.NODE_ENV === "development"
-        ? "claude-3-5-haiku-20241022"
-        : "claude-sonnet-4-6");
+    const qualityMode = Boolean(body.quality_mode);
+    const defaultFastModel = "claude-3-5-haiku-20241022";
+    const defaultQualityModel = "claude-sonnet-4-6";
+    const model = qualityMode
+      ? (process.env.ANTHROPIC_MODEL_QUALITY ??
+        process.env.ANTHROPIC_MODEL ??
+        defaultQualityModel)
+      : (process.env.ANTHROPIC_MODEL_FAST ??
+        process.env.ANTHROPIC_MODEL ??
+        defaultFastModel);
 
     console.log("[weekplan/generate] calling Anthropic (tool-json)", { model });
     const anthropic = new Anthropic({

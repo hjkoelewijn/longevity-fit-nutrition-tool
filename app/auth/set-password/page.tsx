@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 
@@ -69,11 +70,21 @@ export default function SetPasswordPage() {
         </div>
         <h1 className="mt-6 text-3xl font-semibold text-stone-900">Kies je wachtwoord</h1>
         <p className="mt-2 text-sm text-stone-600">
-          Je account is bevestigd. Stel nu je eigen wachtwoord in, zodat je voortaan direct kunt
-          inloggen.
+          Je bent ingelogd via de link uit je mail. Stel hier een wachtwoord in om voortaan met
+          e-mail + wachtwoord in te loggen. Heb je al een wachtwoord of wil je dit overslaan? Ga
+          direct naar de app.
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+        <p className="mt-4 text-center text-sm">
+          <Link
+            href="/dashboard"
+            className="font-medium text-stone-700 underline decoration-stone-300 underline-offset-4 hover:text-stone-900"
+          >
+            Doorgaan naar de app zonder wachtwoord te wijzigen
+          </Link>
+        </p>
+
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <label className="block text-sm font-medium text-stone-700" htmlFor="password">
             Nieuw wachtwoord
           </label>

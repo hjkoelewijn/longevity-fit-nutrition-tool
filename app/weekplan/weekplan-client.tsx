@@ -50,6 +50,15 @@ function nextMondayIso(): string {
   return mon.toISOString().slice(0, 10);
 }
 
+function formatWeekStartNl(isoDate: string): string {
+  const d = new Date(`${isoDate}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return isoDate;
+  return d.toLocaleDateString("nl-NL", {
+    day: "numeric",
+    month: "long",
+  });
+}
+
 export function WeekplanClient({
   initialPlan,
 }: {
@@ -64,6 +73,7 @@ export function WeekplanClient({
   const [weekStart, setWeekStart] = useState(nextMondayIso);
   const [cook, setCook] = useState<3 | 5 | 7>(5);
   const [snacks, setSnacks] = useState(false);
+  const [qualityMode, setQualityMode] = useState(false);
 
   useEffect(() => {
     if (initialPlan?.user_meta?.hydrationStatus !== "hydrating") return;
@@ -118,6 +128,7 @@ export function WeekplanClient({
           week_start_iso: weekStart,
           cook_sessions_per_week: cook,
           snacks_enabled: snacks,
+          quality_mode: qualityMode,
         }),
         signal: ac.signal,
       };
@@ -126,12 +137,31 @@ export function WeekplanClient({
         "/api/weekplan/generate",
         generateInit,
       );
-      const data = (await res.json()) as {
+      const raw = await res.text();
+      let data: {
         error?: string;
         code?: string;
         retry?: boolean;
         mealPlanId?: string;
-      };
+      } = {};
+      if (raw) {
+        try {
+          data = JSON.parse(raw) as {
+            error?: string;
+            code?: string;
+            retry?: boolean;
+            mealPlanId?: string;
+          };
+        } catch {
+          if (!res.ok) {
+            const shortBody = raw.slice(0, 120).trim();
+            setError(
+              `Serverfout (${res.status}). ${shortBody || "Geen JSON-respons ontvangen."}`,
+            );
+            return;
+          }
+        }
+      }
       if (!res.ok) {
         const msg = data.error ?? `Fout (${res.status})`;
         const codePart = data.code ? ` [${data.code}]` : "";
@@ -265,6 +295,14 @@ export function WeekplanClient({
             />
             Tussendoortjes meenemen (max. 4 eetmomenten per dag)
           </label>
+          <label className="flex items-center gap-2 text-sm text-stone-800">
+            <input
+              type="checkbox"
+              checked={qualityMode}
+              onChange={(e) => setQualityMode(e.target.checked)}
+            />
+            Beste kwaliteit (duurt langer)
+          </label>
           {error ? (
             <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
               {error}
@@ -296,7 +334,7 @@ export function WeekplanClient({
             </div>
           </div>
           <p className="mt-1 text-sm text-stone-600">
-            Week van {initialPlan.week_start} · {initialPlan.cook_sessions_per_week}{" "}
+            Week van {formatWeekStartNl(initialPlan.week_start)} · {initialPlan.cook_sessions_per_week}{" "}
             kooksessies
             {initialPlan.snacks_enabled ? " · met tussendoortjes" : ""}
           </p>
