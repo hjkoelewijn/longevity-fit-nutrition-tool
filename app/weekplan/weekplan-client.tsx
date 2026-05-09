@@ -73,7 +73,6 @@ export function WeekplanClient({
   const [weekStart, setWeekStart] = useState(nextMondayIso);
   const [cook, setCook] = useState<3 | 5 | 7>(5);
   const [snacks, setSnacks] = useState(false);
-  const [qualityMode, setQualityMode] = useState(false);
 
   useEffect(() => {
     if (initialPlan?.user_meta?.hydrationStatus !== "hydrating") return;
@@ -128,7 +127,6 @@ export function WeekplanClient({
           week_start_iso: weekStart,
           cook_sessions_per_week: cook,
           snacks_enabled: snacks,
-          quality_mode: qualityMode,
         }),
         signal: ac.signal,
       };
@@ -294,14 +292,6 @@ export function WeekplanClient({
               onChange={(e) => setSnacks(e.target.checked)}
             />
             Tussendoortjes meenemen (max. 4 eetmomenten per dag)
-          </label>
-          <label className="flex items-center gap-2 text-sm text-stone-800">
-            <input
-              type="checkbox"
-              checked={qualityMode}
-              onChange={(e) => setQualityMode(e.target.checked)}
-            />
-            Beste kwaliteit (duurt langer)
           </label>
           {error ? (
             <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">

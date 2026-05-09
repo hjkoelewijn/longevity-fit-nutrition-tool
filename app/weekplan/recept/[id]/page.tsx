@@ -6,6 +6,7 @@ import type { WeekPlanPayload } from "@/lib/weekplan/types";
 import { carbProfileNl } from "@/lib/weekplan/carb-labels";
 import { findMealById } from "@/lib/weekplan/meals-helpers";
 import { signOutAction } from "../../../dashboard/actions";
+import RecipeHydrationTrigger from "./recipe-hydration-trigger";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ function servingsLabel(slot: string, servings: number): string {
 
 function formatAmount(amount: string): string {
   const raw = amount.trim();
+  if (!raw) return "naar smaak";
   if (/^\d+([.,]\d+)?$/.test(raw)) {
     return `${raw} g`;
   }
@@ -32,6 +34,7 @@ function formatAmount(amount: string): string {
 
 function formatAmountWithIngredient(name: string, amount: string): string {
   const raw = amount.trim();
+  if (!raw) return "naar smaak";
   const ingredient = name.toLowerCase();
   const spiceLike =
     /(zout|peper|kaneel|komijn|kurkuma|paprika|oregano|tijm|venkel|specerij|kruiden|knoflookpoeder|uienpoeder|chilipoeder)/.test(
@@ -110,6 +113,7 @@ export default async function WeekplanReceptPage(props: {
   }
   const ingredients = Array.isArray(meal.ingredients) ? meal.ingredients : [];
   const steps = Array.isArray(meal.steps) ? meal.steps : [];
+  const needsHydration = ingredients.length === 0 || steps.length === 0;
   const dayIndex = payload.days.findIndex((d) =>
     [d.meals.ontbijt, d.meals.lunch, d.meals.diner, ...(d.tussendoortjes ?? [])].some(
       (m) => m.id === meal.id,
@@ -173,6 +177,7 @@ export default async function WeekplanReceptPage(props: {
               voor 1 extra lunchportie.
             </p>
           ) : null}
+          <RecipeHydrationTrigger mealPlanId={mp} mealId={meal.id} enabled={needsHydration} />
 
           <section className="mt-8">
             <h2 className="text-lg font-semibold text-stone-900">Ingrediënten</h2>
