@@ -11,6 +11,7 @@ type Body = {
   meal_id?: string;
   quality_mode?: boolean;
   force?: boolean;
+  polish_only?: boolean;
 };
 
 function findMealRef(payload: WeekPlanPayload, mealId: string): WeekPlanMeal | null {
@@ -87,6 +88,7 @@ export async function POST(request: Request) {
     const mealId = body.meal_id?.trim();
     const qualityMode = Boolean(body.quality_mode);
     const force = Boolean(body.force);
+    const polishOnly = Boolean(body.polish_only);
     if (!mealPlanId || !mealId) {
       return NextResponse.json({ error: "meal_plan_id of meal_id ontbreekt." }, { status: 400 });
     }
@@ -129,7 +131,29 @@ export async function POST(request: Request) {
       maxRetries: 2,
     });
 
-    const prompt = `
+    const prompt = polishOnly
+      ? `
+Polish dit bestaande recept. Laat ingrediënten en hoeveelheden exact ongewijzigd.
+Geef EXACT één JSON-object terug in dit schema:
+{
+  "steps": ["", "", ""],
+  "kid_tip": ""
+}
+
+Regels:
+- Nederlands.
+- Verfijn alleen de bereidingsstappen en optioneel kid_tip.
+- 3-7 korte, duidelijke stappen.
+- Gebruik dezelfde ingrediënten en hoeveelheden als de bron (geen nieuwe ingrediënten of wijzigingen).
+- Geen markdown, geen extra tekst.
+
+Profielcontext:
+${JSON.stringify(profile ?? {})}
+
+Maaltijd (bron):
+${JSON.stringify(meal)}
+      `.trim()
+      : `
 Maak dit ene recept compleet en praktisch.
 Geef EXACT één JSON-object terug in dit schema:
 {
@@ -152,7 +176,7 @@ ${JSON.stringify(profile ?? {})}
 
 Maaltijd (bron):
 ${JSON.stringify(meal)}
-    `.trim();
+      `.trim();
     let nextIngredients: Array<{ name: string; amount: string; note: string | null }> = [];
     let nextSteps: string[] = [];
     let nextKidTip: string | null = null;
@@ -162,7 +186,9 @@ ${JSON.stringify(meal)}
       const promptWithRetry =
         attempt === 0
           ? prompt
-          : `${prompt}\n\nJe vorige output miste valide eenheden of was inconsistent met de stappen. Genereer opnieuw met duidelijke keuken-eenheden per ingrediënt.`;
+          : polishOnly
+            ? `${prompt}\n\nJe vorige output was niet valide. Genereer opnieuw met alleen stappen en optionele kid_tip.`
+            : `${prompt}\n\nJe vorige output miste valide eenheden of was inconsistent met de stappen. Genereer opnieuw met duidelijke keuken-eenheden per ingrediënt.`;
 
       const message = await anthropic.messages.create({
         model,
@@ -185,15 +211,23 @@ ${JSON.stringify(meal)}
         kid_tip?: unknown;
       };
 
-      let ingredientsCandidate = Array.isArray(parsed.ingredients)
-        ? parsed.ingredients
-            .map((ing) => ({
-              name: String(ing?.name ?? "").trim(),
-              amount: normalizeAmountText(String(ing?.amount ?? "")),
-              note: typeof ing?.note === "string" ? ing.note.trim() : null,
-            }))
-            .filter((ing) => ing.name.length > 0)
-        : [];
+      let ingredientsCandidate = polishOnly
+        ? (Array.isArray(meal.ingredients)
+            ? meal.ingredients.map((ing) => ({
+                name: String(ing?.name ?? "").trim(),
+                amount: normalizeAmountText(String(ing?.amount ?? "")),
+                note: typeof ing?.note === "string" ? ing.note.trim() : null,
+              }))
+            : [])
+        : (Array.isArray(parsed.ingredients)
+            ? parsed.ingredients
+                .map((ing) => ({
+                  name: String(ing?.name ?? "").trim(),
+                  amount: normalizeAmountText(String(ing?.amount ?? "")),
+                  note: typeof ing?.note === "string" ? ing.note.trim() : null,
+                }))
+                .filter((ing) => ing.name.length > 0)
+            : []);
       const stepsCandidate = Array.isArray(parsed.steps)
         ? parsed.steps.map((s) => String(s ?? "").trim()).filter(Boolean)
         : [];

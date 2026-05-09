@@ -45,6 +45,7 @@ export default function RecipeHydrationTrigger({ mealPlanId, mealId, enabled }: 
             meal_id: mealId,
             quality_mode: true,
             force: true,
+            polish_only: true,
           }),
         }).finally(() => {
           window.setTimeout(() => {
