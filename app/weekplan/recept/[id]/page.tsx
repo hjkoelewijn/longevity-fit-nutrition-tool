@@ -106,6 +106,50 @@ function inferAmountFromName(name: string, mealTitle: string, slot: string, serv
   return grams(80);
 }
 
+function parseNumericAmount(amount: string): number | null {
+  const m = amount.trim().match(/^(\d+(?:[.,]\d+)?)/);
+  if (!m) return null;
+  const n = Number(m[1].replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
+
+function snap(value: number, steps: number[]): number {
+  let best = steps[0];
+  let bestDiff = Math.abs(value - best);
+  for (const s of steps) {
+    const d = Math.abs(value - s);
+    if (d < bestDiff) {
+      best = s;
+      bestDiff = d;
+    }
+  }
+  return best;
+}
+
+function normalizeAmountForDisplay(name: string, amount: string, slot: string): string {
+  const n = name.toLowerCase();
+  const parsed = parseNumericAmount(amount);
+
+  if (/(griekse yoghurt|yoghurt|kwark|skyr)/.test(n)) {
+    const target = slot === "ontbijt" ? 200 : slot === "tussendoortje" ? 150 : 150;
+    const v = parsed ?? target;
+    return `${snap(v, [150, 175, 200, 225, 250])} g`;
+  }
+  if (/(aardbei|blauwe bes|framboos|bramen|druiven)/.test(n)) {
+    const v = parsed ?? 100;
+    return `${snap(v, [50, 75, 100, 125, 150])} g`;
+  }
+  if (/(walnoot|amandel|cashew|pecan|hazelnoot|pistache|notenmix)/.test(n)) {
+    const v = parsed ?? 20;
+    return `${snap(v, [10, 15, 20, 25, 30])} g`;
+  }
+  if (/(pompoenpit|zonnebloempit|chia|lijnzaad|sesamzaad|hennepzaad)/.test(n)) {
+    const v = parsed ?? 10;
+    return `${snap(v, [5, 10, 15, 20])} g`;
+  }
+  return amount;
+}
+
 function formatAmountWithIngredient(name: string, amount: string): string {
   const raw = amount.trim();
   const ingredient = name.toLowerCase();
@@ -267,7 +311,11 @@ export default async function WeekplanReceptPage(props: {
                     <span className="text-stone-600">
                       {formatAmountWithIngredient(
                         String(ing.name ?? "Ingrediënt"),
-                        String(ing.amount ?? ""),
+                        normalizeAmountForDisplay(
+                          String(ing.name ?? "Ingrediënt"),
+                          String(ing.amount ?? ""),
+                          String(meal.slot ?? ""),
+                        ),
                       ) ||
                         inferAmountFromName(
                           String(ing.name ?? "Ingrediënt"),

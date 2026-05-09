@@ -106,6 +106,51 @@ function inferAmountFromName(name: string, meal: WeekPlanMeal): string {
   return grams(80);
 }
 
+function parseNumericAmount(amount: string): number | null {
+  const m = amount.trim().match(/^(\d+(?:[.,]\d+)?)/);
+  if (!m) return null;
+  const n = Number(m[1].replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
+
+function snap(value: number, steps: number[]): number {
+  let best = steps[0];
+  let bestDiff = Math.abs(value - best);
+  for (const s of steps) {
+    const d = Math.abs(value - s);
+    if (d < bestDiff) {
+      best = s;
+      bestDiff = d;
+    }
+  }
+  return best;
+}
+
+function normalizeAmountFromCategory(name: string, amount: string, meal: WeekPlanMeal): string {
+  const n = name.toLowerCase();
+  const parsed = parseNumericAmount(amount);
+  const slot = meal.slot;
+
+  if (/(griekse yoghurt|yoghurt|kwark|skyr)/.test(n)) {
+    const target = slot === "ontbijt" ? 200 : slot === "tussendoortje" ? 150 : 150;
+    const v = parsed ?? target;
+    return `${snap(v, [150, 175, 200, 225, 250])} g`;
+  }
+  if (/(aardbei|blauwe bes|framboos|bramen|druiven)/.test(n)) {
+    const v = parsed ?? 100;
+    return `${snap(v, [50, 75, 100, 125, 150])} g`;
+  }
+  if (/(walnoot|amandel|cashew|pecan|hazelnoot|pistache|notenmix)/.test(n)) {
+    const v = parsed ?? 20;
+    return `${snap(v, [10, 15, 20, 25, 30])} g`;
+  }
+  if (/(pompoenpit|zonnebloempit|chia|lijnzaad|sesamzaad|hennepzaad)/.test(n)) {
+    const v = parsed ?? 10;
+    return `${snap(v, [5, 10, 15, 20])} g`;
+  }
+  return amount;
+}
+
 export async function POST(request: Request) {
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -175,6 +220,7 @@ Regels:
 - Elk ingrediënt MOET een hoeveelheid + eenheid hebben (bijv. "150 g", "2 stuks", "1 el", "200 ml", "1 tl").
 - 3-7 korte bereidingsstappen.
 - Houd rekening met profielcontext en maaltijdslot.
+- Ingrediëntenlijst en bereidingsstappen moeten qua hoeveelheden consistent zijn.
 - Geen markdown, geen extra tekst.
 
 Profielcontext:
@@ -222,6 +268,10 @@ ${JSON.stringify(meal)}
             }
             return ing;
           })
+          .map((ing) => ({
+            ...ing,
+            amount: normalizeAmountFromCategory(ing.name, ing.amount, meal),
+          }))
           .filter((ing) => ing.name)
       : [];
     const nextSteps = Array.isArray(parsed.steps)
