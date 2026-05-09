@@ -31,8 +31,44 @@ function hasDetails(meal: WeekPlanMeal): boolean {
   return Array.isArray(meal.ingredients) && meal.ingredients.length > 0 && Array.isArray(meal.steps) && meal.steps.length > 0;
 }
 
-function inferAmountFromName(name: string): string {
+function roundToHalf(value: number): number {
+  return Math.round(value * 2) / 2;
+}
+
+function pieceLabel(value: number): string {
+  if (value <= 0.5) return "1/2 stuk";
+  if (Number.isInteger(value)) return `${value} ${value === 1 ? "stuk" : "stuks"}`;
+  const whole = Math.floor(value);
+  const remainder = value - whole;
+  if (remainder === 0.5) {
+    return whole <= 0 ? "1/2 stuk" : `${whole} 1/2 stuks`;
+  }
+  return `${value} stuks`;
+}
+
+function inferFruitPieces(name: string, meal: WeekPlanMeal): string {
+  const ctx = `${meal.title} ${meal.slot}`.toLowerCase();
+  const servings = Math.max(1, Number(meal.servings ?? 1));
+  const isSmoothieLike = /(smoothie|shake|bowl|havermout|pap|ontbijt)/.test(ctx);
+  const isToppingLike = /(salade|topping|garnering|bijgerecht)/.test(ctx);
+  const isCitrusOrAvocado = /(citroen|limoen|avocado)/.test(name);
+
+  let pieces = isCitrusOrAvocado ? servings * 0.5 : servings * 0.75;
+  if (isSmoothieLike) pieces = servings * 1;
+  if (isToppingLike) pieces = servings * 0.5;
+
+  return pieceLabel(roundToHalf(Math.max(0.5, pieces)));
+}
+
+function inferAmountFromName(name: string, meal: WeekPlanMeal): string {
   const n = name.toLowerCase();
+  if (/(citroen|limoen|avocado)/.test(n)) return inferFruitPieces(n, meal);
+  if (/(knoflook)/.test(n)) return "1 teen";
+  if (/(gember)/.test(n)) return "1 tl";
+  if (/(ui|rode ui|sjalot)/.test(n)) return "1 stuk";
+  if (/(appel|peer|banaan|sinaasappel|mandarijn|kiwi|perzik|nectarine|mango)/.test(n))
+    return inferFruitPieces(n, meal);
+  if (/(aardbei|blauwe bes|framboos|bramen|druiven)/.test(n)) return "100 g";
   if (/(zout|peper|kaneel|komijn|kurkuma|paprika|oregano|tijm|kruiden|specerij)/.test(n)) return "1 tl";
   if (/(olie|olijfolie|azijn|sojasaus|tamari|honing|mosterd|citroensap|limoensap)/.test(n)) return "1 el";
   if (/(kip|zalm|vis|gehakt|tofu|tempeh|biefstuk|ei|eieren|bonen|linzen|kikkererwten)/.test(n)) return "150 g";
@@ -151,7 +187,7 @@ ${JSON.stringify(meal)}
           .map((ing) => {
             const amountRaw = ing.amount;
             if (!amountRaw || amountRaw.toLowerCase() === "naar smaak") {
-              return { ...ing, amount: inferAmountFromName(ing.name) };
+              return { ...ing, amount: inferAmountFromName(ing.name, meal) };
             }
             if (/^\d+([.,]\d+)?$/.test(amountRaw)) {
               return { ...ing, amount: `${amountRaw} g` };

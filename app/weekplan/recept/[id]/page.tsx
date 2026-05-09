@@ -32,8 +32,44 @@ function formatAmount(amount: string): string {
   return raw;
 }
 
-function inferAmountFromName(name: string): string {
+function roundToHalf(value: number): number {
+  return Math.round(value * 2) / 2;
+}
+
+function pieceLabel(value: number): string {
+  if (value <= 0.5) return "1/2 stuk";
+  if (Number.isInteger(value)) return `${value} ${value === 1 ? "stuk" : "stuks"}`;
+  const whole = Math.floor(value);
+  const remainder = value - whole;
+  if (remainder === 0.5) {
+    return whole <= 0 ? "1/2 stuk" : `${whole} 1/2 stuks`;
+  }
+  return `${value} stuks`;
+}
+
+function inferFruitPieces(name: string, title: string, slot: string, servings: number): string {
+  const ctx = `${title} ${slot}`.toLowerCase();
+  const s = Math.max(1, Number(servings ?? 1));
+  const isSmoothieLike = /(smoothie|shake|bowl|havermout|pap|ontbijt)/.test(ctx);
+  const isToppingLike = /(salade|topping|garnering|bijgerecht)/.test(ctx);
+  const isCitrusOrAvocado = /(citroen|limoen|avocado)/.test(name);
+
+  let pieces = isCitrusOrAvocado ? s * 0.5 : s * 0.75;
+  if (isSmoothieLike) pieces = s * 1;
+  if (isToppingLike) pieces = s * 0.5;
+
+  return pieceLabel(roundToHalf(Math.max(0.5, pieces)));
+}
+
+function inferAmountFromName(name: string, mealTitle: string, slot: string, servings: number): string {
   const n = name.toLowerCase();
+  if (/(citroen|limoen|avocado)/.test(n)) return inferFruitPieces(n, mealTitle, slot, servings);
+  if (/(knoflook)/.test(n)) return "1 teen";
+  if (/(gember)/.test(n)) return "1 tl";
+  if (/(ui|rode ui|sjalot)/.test(n)) return "1 stuk";
+  if (/(appel|peer|banaan|sinaasappel|mandarijn|kiwi|perzik|nectarine|mango)/.test(n))
+    return inferFruitPieces(n, mealTitle, slot, servings);
+  if (/(aardbei|blauwe bes|framboos|bramen|druiven)/.test(n)) return "100 g";
   if (/(zout|peper|kaneel|komijn|kurkuma|paprika|oregano|tijm|kruiden|specerij)/.test(n)) return "1 tl";
   if (/(olie|olijfolie|azijn|sojasaus|tamari|honing|mosterd|citroensap|limoensap)/.test(n)) return "1 el";
   if (/(kip|zalm|vis|gehakt|tofu|tempeh|biefstuk|ei|eieren|bonen|linzen|kikkererwten)/.test(n)) return "150 g";
@@ -57,7 +93,7 @@ function formatAmountWithIngredient(name: string, amount: string): string {
 
   if (!raw || raw.toLowerCase() === "naar smaak") {
     // Keep spices subtle; infer concrete unit/amount for regular ingredients.
-    return spiceLike ? "1 tl" : inferAmountFromName(name);
+    return spiceLike ? "1 tl" : "";
   }
 
   const asNumber = Number(raw.replace(",", "."));
@@ -205,7 +241,13 @@ export default async function WeekplanReceptPage(props: {
                       {formatAmountWithIngredient(
                         String(ing.name ?? "Ingrediënt"),
                         String(ing.amount ?? ""),
-                      )}
+                      ) ||
+                        inferAmountFromName(
+                          String(ing.name ?? "Ingrediënt"),
+                          String(meal.title ?? ""),
+                          String(meal.slot ?? ""),
+                          Number(meal.servings ?? 1),
+                        )}
                     </span>
                     {ing.note ? (
                       <span className="text-stone-500"> ({String(ing.note)})</span>
