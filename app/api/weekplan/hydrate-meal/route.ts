@@ -44,6 +44,37 @@ function hasValidUnit(amount: string): boolean {
   return /(g|gram|kg|ml|l|tl|theelepel|el|eetlepel|stuk|stuks|teen|snufje)/.test(raw);
 }
 
+function escapeRegex(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function extractAmountFromSteps(ingredientName: string, steps: string[]): string {
+  const name = ingredientName.trim();
+  if (!name || !Array.isArray(steps) || steps.length === 0) return "";
+  const namePattern = new RegExp(escapeRegex(name), "i");
+  const amountPattern =
+    /(\d+(?:[.,]\d+)?)\s*(g|gram|kg|ml|l|tl|theelepel(?:s)?|el|eetlepel(?:s)?|stuk|stuks|teen|snufje)/i;
+
+  for (const step of steps) {
+    if (!namePattern.test(step)) continue;
+    const amountMatch = step.match(amountPattern);
+    if (!amountMatch) continue;
+    const value = amountMatch[1];
+    const unit = amountMatch[2].toLowerCase();
+    const normalizedUnit =
+      unit === "gram"
+        ? "g"
+        : unit.startsWith("theelepel")
+          ? "tl"
+          : unit.startsWith("eetlepel")
+            ? "el"
+            : unit;
+    return `${value} ${normalizedUnit}`;
+  }
+
+  return "";
+}
+
 export async function POST(request: Request) {
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -154,7 +185,7 @@ ${JSON.stringify(meal)}
         kid_tip?: unknown;
       };
 
-      const ingredientsCandidate = Array.isArray(parsed.ingredients)
+      let ingredientsCandidate = Array.isArray(parsed.ingredients)
         ? parsed.ingredients
             .map((ing) => ({
               name: String(ing?.name ?? "").trim(),
@@ -166,6 +197,14 @@ ${JSON.stringify(meal)}
       const stepsCandidate = Array.isArray(parsed.steps)
         ? parsed.steps.map((s) => String(s ?? "").trim()).filter(Boolean)
         : [];
+
+      // If model forgets amounts for some ingredients, recover from step text before rejecting.
+      ingredientsCandidate = ingredientsCandidate.map((ing) => {
+        if (hasValidUnit(ing.amount)) return ing;
+        const fromSteps = extractAmountFromSteps(ing.name, stepsCandidate);
+        if (fromSteps) return { ...ing, amount: fromSteps };
+        return ing;
+      });
 
       const unitsOk = ingredientsCandidate.every((ing) => hasValidUnit(ing.amount));
       if (ingredientsCandidate.length >= 3 && stepsCandidate.length >= 2 && unitsOk) {

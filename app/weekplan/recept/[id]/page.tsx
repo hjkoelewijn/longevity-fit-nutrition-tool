@@ -80,6 +80,17 @@ function lunchUsesLeftoversTitle(title: string): boolean {
   return t.includes("restjes") || t.includes("leftover");
 }
 
+function hasMissingIngredientAmounts(
+  ingredients: Array<{ amount?: string | null }> | undefined,
+): boolean {
+  if (!Array.isArray(ingredients) || ingredients.length === 0) return true;
+  return ingredients.some((ing) => {
+    const raw = String(ing?.amount ?? "").trim().toLowerCase();
+    if (!raw || raw === "hoeveelheid volgt") return true;
+    return !/(g|gram|kg|ml|l|tl|theelepel|el|eetlepel|stuk|stuks|teen|snufje)/.test(raw);
+  });
+}
+
 export default async function WeekplanReceptPage(props: {
   params: Promise<{ id: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -120,7 +131,8 @@ export default async function WeekplanReceptPage(props: {
   }
   const ingredients = Array.isArray(meal.ingredients) ? meal.ingredients : [];
   const steps = Array.isArray(meal.steps) ? meal.steps : [];
-  const needsHydration = ingredients.length === 0 || steps.length === 0;
+  const needsHydration =
+    ingredients.length === 0 || steps.length === 0 || hasMissingIngredientAmounts(ingredients);
   const dayIndex = payload.days.findIndex((d) =>
     [d.meals.ontbijt, d.meals.lunch, d.meals.diner, ...(d.tussendoortjes ?? [])].some(
       (m) => m.id === meal.id,
