@@ -74,6 +74,7 @@ function formatAmountWithIngredient(name: string, amount: string): string {
   return formatAmount(raw);
 }
 
+
 function lunchUsesLeftoversTitle(title: string): boolean {
   const t = title.toLowerCase();
   return t.includes("restjes") || t.includes("leftover");
