@@ -63,20 +63,47 @@ function inferFruitPieces(name: string, title: string, slot: string, servings: n
 
 function inferAmountFromName(name: string, mealTitle: string, slot: string, servings: number): string {
   const n = name.toLowerCase();
+  const s = Math.max(1, Number(servings ?? 1));
+  const slotFactor = slot === "diner" ? 1.2 : slot === "lunch" ? 1 : slot === "ontbijt" ? 0.9 : 0.7;
+  const baseFactor = Math.max(0.6, slotFactor * s);
+  const grams = (value: number) => `${Math.max(5, Math.round(value * baseFactor))} g`;
+
   if (/(citroen|limoen|avocado)/.test(n)) return inferFruitPieces(n, mealTitle, slot, servings);
   if (/(knoflook)/.test(n)) return "1 teen";
   if (/(gember)/.test(n)) return "1 tl";
   if (/(ui|rode ui|sjalot)/.test(n)) return "1 stuk";
   if (/(appel|peer|banaan|sinaasappel|mandarijn|kiwi|perzik|nectarine|mango)/.test(n))
     return inferFruitPieces(n, mealTitle, slot, servings);
-  if (/(aardbei|blauwe bes|framboos|bramen|druiven)/.test(n)) return "100 g";
+  if (/(aardbei|blauwe bes|framboos|bramen|druiven)/.test(n)) return grams(80);
+
+  if (/(walnoot|amandel|cashew|pecan|hazelnoot|pistache|notenmix)/.test(n)) return grams(20);
+  if (/(pompoenpit|zonnebloempit|chia|lijnzaad|sesamzaad|hennepzaad)/.test(n)) return grams(12);
+
+  if (/(griekse yoghurt|yoghurt|kwark|skyr)/.test(n)) {
+    return slot === "ontbijt" || slot === "tussendoortje" ? grams(220) : grams(150);
+  }
+  if (/(melk|kefir|kokosmelk)/.test(n)) {
+    return `${Math.max(100, Math.round(180 * baseFactor))} ml`;
+  }
+
+  if (/(kip|zalm|vis|gehakt|tofu|tempeh|biefstuk)/.test(n)) return grams(140);
+  if (/(ei|eieren)/.test(n)) {
+    const eggs = Math.max(1, Math.round(s * (slot === "ontbijt" ? 2 : 1.5)));
+    return `${eggs} ${eggs === 1 ? "stuk" : "stuks"}`;
+  }
+  if (/(bonen|linzen|kikkererwten)/.test(n)) return grams(120);
+
+  if (/(havermout|muesli|granola)/.test(n)) return grams(50);
+  if (/(rijst|quinoa|couscous|pasta)/.test(n)) return grams(slot === "diner" ? 75 : 60);
+  if (/(aardappel|zoete aardappel)/.test(n)) return grams(180);
+
+  if (/(rucola|sla|spinazie|boerenkool|andijvie|paksoi)/.test(n)) return grams(70);
+  if (/(courgette|paprika|broccoli|wortel|komkommer|tomaat|bloemkool)/.test(n)) return grams(120);
+
+  if (/(feta|geitenkaas|parmezaan|mozzarella|kaas)/.test(n)) return grams(30);
   if (/(zout|peper|kaneel|komijn|kurkuma|paprika|oregano|tijm|kruiden|specerij)/.test(n)) return "1 tl";
   if (/(olie|olijfolie|azijn|sojasaus|tamari|honing|mosterd|citroensap|limoensap)/.test(n)) return "1 el";
-  if (/(kip|zalm|vis|gehakt|tofu|tempeh|biefstuk|ei|eieren|bonen|linzen|kikkererwten)/.test(n)) return "150 g";
-  if (/(rucola|sla|spinazie|boerenkool|andijvie|paksoi|groente|courgette|paprika|broccoli|wortel|ui)/.test(n)) return "100 g";
-  if (/(rijst|quinoa|havermout|pasta|aardappel|zoete aardappel)/.test(n)) return "75 g";
-  if (/(yoghurt|kwark|melk|kefir)/.test(n)) return "200 ml";
-  return "100 g";
+  return grams(80);
 }
 
 function formatAmountWithIngredient(name: string, amount: string): string {
