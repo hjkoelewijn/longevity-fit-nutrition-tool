@@ -32,124 +32,6 @@ function formatAmount(amount: string): string {
   return raw;
 }
 
-function roundToHalf(value: number): number {
-  return Math.round(value * 2) / 2;
-}
-
-function pieceLabel(value: number): string {
-  if (value <= 0.5) return "1/2 stuk";
-  if (Number.isInteger(value)) return `${value} ${value === 1 ? "stuk" : "stuks"}`;
-  const whole = Math.floor(value);
-  const remainder = value - whole;
-  if (remainder === 0.5) {
-    return whole <= 0 ? "1/2 stuk" : `${whole} 1/2 stuks`;
-  }
-  return `${value} stuks`;
-}
-
-function inferFruitPieces(name: string, title: string, slot: string, servings: number): string {
-  const ctx = `${title} ${slot}`.toLowerCase();
-  const s = Math.max(1, Number(servings ?? 1));
-  const isSmoothieLike = /(smoothie|shake|bowl|havermout|pap|ontbijt)/.test(ctx);
-  const isToppingLike = /(salade|topping|garnering|bijgerecht)/.test(ctx);
-  const isCitrusOrAvocado = /(citroen|limoen|avocado)/.test(name);
-
-  let pieces = isCitrusOrAvocado ? s * 0.5 : s * 0.75;
-  if (isSmoothieLike) pieces = s * 1;
-  if (isToppingLike) pieces = s * 0.5;
-
-  return pieceLabel(roundToHalf(Math.max(0.5, pieces)));
-}
-
-function inferAmountFromName(name: string, mealTitle: string, slot: string, servings: number): string {
-  const n = name.toLowerCase();
-  const s = Math.max(1, Number(servings ?? 1));
-  const slotFactor = slot === "diner" ? 1.2 : slot === "lunch" ? 1 : slot === "ontbijt" ? 0.9 : 0.7;
-  const baseFactor = Math.max(0.6, slotFactor * s);
-  const grams = (value: number) => `${Math.max(5, Math.round(value * baseFactor))} g`;
-
-  if (/(citroen|limoen|avocado)/.test(n)) return inferFruitPieces(n, mealTitle, slot, servings);
-  if (/(knoflook)/.test(n)) return "1 teen";
-  if (/(gember)/.test(n)) return "1 tl";
-  if (/(ui|rode ui|sjalot)/.test(n)) return "1 stuk";
-  if (/(appel|peer|banaan|sinaasappel|mandarijn|kiwi|perzik|nectarine|mango)/.test(n))
-    return inferFruitPieces(n, mealTitle, slot, servings);
-  if (/(aardbei|blauwe bes|framboos|bramen|druiven)/.test(n)) return grams(80);
-
-  if (/(walnoot|amandel|cashew|pecan|hazelnoot|pistache|notenmix)/.test(n)) return grams(20);
-  if (/(pompoenpit|zonnebloempit|chia|lijnzaad|sesamzaad|hennepzaad)/.test(n)) return grams(12);
-
-  if (/(griekse yoghurt|yoghurt|kwark|skyr)/.test(n)) {
-    return slot === "ontbijt" || slot === "tussendoortje" ? grams(220) : grams(150);
-  }
-  if (/(melk|kefir|kokosmelk)/.test(n)) {
-    return `${Math.max(100, Math.round(180 * baseFactor))} ml`;
-  }
-
-  if (/(kip|zalm|vis|gehakt|tofu|tempeh|biefstuk)/.test(n)) return grams(140);
-  if (/(ei|eieren)/.test(n)) {
-    const eggs = Math.max(1, Math.round(s * (slot === "ontbijt" ? 2 : 1.5)));
-    return `${eggs} ${eggs === 1 ? "stuk" : "stuks"}`;
-  }
-  if (/(bonen|linzen|kikkererwten)/.test(n)) return grams(120);
-
-  if (/(havermout|muesli|granola)/.test(n)) return grams(50);
-  if (/(rijst|quinoa|couscous|pasta)/.test(n)) return grams(slot === "diner" ? 75 : 60);
-  if (/(aardappel|zoete aardappel)/.test(n)) return grams(180);
-
-  if (/(rucola|sla|spinazie|boerenkool|andijvie|paksoi)/.test(n)) return grams(70);
-  if (/(courgette|paprika|broccoli|wortel|komkommer|tomaat|bloemkool)/.test(n)) return grams(120);
-
-  if (/(feta|geitenkaas|parmezaan|mozzarella|kaas)/.test(n)) return grams(30);
-  if (/(zout|peper|kaneel|komijn|kurkuma|paprika|oregano|tijm|kruiden|specerij)/.test(n)) return "1 tl";
-  if (/(olie|olijfolie|azijn|sojasaus|tamari|honing|mosterd|citroensap|limoensap)/.test(n)) return "1 el";
-  return grams(80);
-}
-
-function parseNumericAmount(amount: string): number | null {
-  const m = amount.trim().match(/^(\d+(?:[.,]\d+)?)/);
-  if (!m) return null;
-  const n = Number(m[1].replace(",", "."));
-  return Number.isFinite(n) ? n : null;
-}
-
-function snap(value: number, steps: number[]): number {
-  let best = steps[0];
-  let bestDiff = Math.abs(value - best);
-  for (const s of steps) {
-    const d = Math.abs(value - s);
-    if (d < bestDiff) {
-      best = s;
-      bestDiff = d;
-    }
-  }
-  return best;
-}
-
-function normalizeAmountForDisplay(name: string, amount: string, slot: string): string {
-  const n = name.toLowerCase();
-  const parsed = parseNumericAmount(amount);
-
-  if (/(griekse yoghurt|yoghurt|kwark|skyr)/.test(n)) {
-    const target = slot === "ontbijt" ? 200 : slot === "tussendoortje" ? 150 : 150;
-    const v = parsed ?? target;
-    return `${snap(v, [150, 175, 200, 225, 250])} g`;
-  }
-  if (/(aardbei|blauwe bes|framboos|bramen|druiven)/.test(n)) {
-    const v = parsed ?? 100;
-    return `${snap(v, [50, 75, 100, 125, 150])} g`;
-  }
-  if (/(walnoot|amandel|cashew|pecan|hazelnoot|pistache|notenmix)/.test(n)) {
-    const v = parsed ?? 20;
-    return `${snap(v, [10, 15, 20, 25, 30])} g`;
-  }
-  if (/(pompoenpit|zonnebloempit|chia|lijnzaad|sesamzaad|hennepzaad)/.test(n)) {
-    const v = parsed ?? 10;
-    return `${snap(v, [5, 10, 15, 20])} g`;
-  }
-  return amount;
-}
-
 function formatAmountWithIngredient(name: string, amount: string): string {
   const raw = amount.trim();
   const ingredient = name.toLowerCase();
@@ -162,9 +44,11 @@ function formatAmountWithIngredient(name: string, amount: string): string {
       ingredient,
     );
 
-  if (!raw || raw.toLowerCase() === "naar smaak") {
-    // Keep spices subtle; infer concrete unit/amount for regular ingredients.
-    return spiceLike ? "1 tl" : "";
+  if (!raw) {
+    return "hoeveelheid volgt";
+  }
+  if (raw.toLowerCase() === "naar smaak") {
+    return spiceLike ? "naar smaak" : "hoeveelheid volgt";
   }
 
   const asNumber = Number(raw.replace(",", "."));
@@ -311,18 +195,8 @@ export default async function WeekplanReceptPage(props: {
                     <span className="text-stone-600">
                       {formatAmountWithIngredient(
                         String(ing.name ?? "Ingrediënt"),
-                        normalizeAmountForDisplay(
-                          String(ing.name ?? "Ingrediënt"),
-                          String(ing.amount ?? ""),
-                          String(meal.slot ?? ""),
-                        ),
-                      ) ||
-                        inferAmountFromName(
-                          String(ing.name ?? "Ingrediënt"),
-                          String(meal.title ?? ""),
-                          String(meal.slot ?? ""),
-                          Number(meal.servings ?? 1),
-                        )}
+                        String(ing.amount ?? ""),
+                      )}
                     </span>
                     {ing.note ? (
                       <span className="text-stone-500"> ({String(ing.note)})</span>

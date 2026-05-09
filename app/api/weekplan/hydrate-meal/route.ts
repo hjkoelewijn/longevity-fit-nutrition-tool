@@ -31,124 +31,17 @@ function hasDetails(meal: WeekPlanMeal): boolean {
   return Array.isArray(meal.ingredients) && meal.ingredients.length > 0 && Array.isArray(meal.steps) && meal.steps.length > 0;
 }
 
-function roundToHalf(value: number): number {
-  return Math.round(value * 2) / 2;
+function normalizeAmountText(amount: string): string {
+  const raw = amount.trim();
+  if (!raw) return "";
+  if (/^\d+([.,]\d+)?$/.test(raw)) return `${raw} g`;
+  return raw;
 }
 
-function pieceLabel(value: number): string {
-  if (value <= 0.5) return "1/2 stuk";
-  if (Number.isInteger(value)) return `${value} ${value === 1 ? "stuk" : "stuks"}`;
-  const whole = Math.floor(value);
-  const remainder = value - whole;
-  if (remainder === 0.5) {
-    return whole <= 0 ? "1/2 stuk" : `${whole} 1/2 stuks`;
-  }
-  return `${value} stuks`;
-}
-
-function inferFruitPieces(name: string, meal: WeekPlanMeal): string {
-  const ctx = `${meal.title} ${meal.slot}`.toLowerCase();
-  const servings = Math.max(1, Number(meal.servings ?? 1));
-  const isSmoothieLike = /(smoothie|shake|bowl|havermout|pap|ontbijt)/.test(ctx);
-  const isToppingLike = /(salade|topping|garnering|bijgerecht)/.test(ctx);
-  const isCitrusOrAvocado = /(citroen|limoen|avocado)/.test(name);
-
-  let pieces = isCitrusOrAvocado ? servings * 0.5 : servings * 0.75;
-  if (isSmoothieLike) pieces = servings * 1;
-  if (isToppingLike) pieces = servings * 0.5;
-
-  return pieceLabel(roundToHalf(Math.max(0.5, pieces)));
-}
-
-function inferAmountFromName(name: string, meal: WeekPlanMeal): string {
-  const n = name.toLowerCase();
-  const slot = meal.slot;
-  const servings = Math.max(1, Number(meal.servings ?? 1));
-  const slotFactor = slot === "diner" ? 1.2 : slot === "lunch" ? 1 : slot === "ontbijt" ? 0.9 : 0.7;
-  const baseFactor = Math.max(0.6, slotFactor * servings);
-  const grams = (value: number) => `${Math.max(5, Math.round(value * baseFactor))} g`;
-
-  if (/(citroen|limoen|avocado)/.test(n)) return inferFruitPieces(n, meal);
-  if (/(knoflook)/.test(n)) return "1 teen";
-  if (/(gember)/.test(n)) return "1 tl";
-  if (/(ui|rode ui|sjalot)/.test(n)) return "1 stuk";
-  if (/(appel|peer|banaan|sinaasappel|mandarijn|kiwi|perzik|nectarine|mango)/.test(n))
-    return inferFruitPieces(n, meal);
-  if (/(aardbei|blauwe bes|framboos|bramen|druiven)/.test(n)) return grams(80);
-
-  if (/(walnoot|amandel|cashew|pecan|hazelnoot|pistache|notenmix)/.test(n)) return grams(20);
-  if (/(pompoenpit|zonnebloempit|chia|lijnzaad|sesamzaad|hennepzaad)/.test(n)) return grams(12);
-
-  if (/(griekse yoghurt|yoghurt|kwark|skyr)/.test(n)) {
-    return slot === "ontbijt" || slot === "tussendoortje" ? grams(220) : grams(150);
-  }
-  if (/(melk|kefir|kokosmelk)/.test(n)) {
-    return `${Math.max(100, Math.round(180 * baseFactor))} ml`;
-  }
-
-  if (/(kip|zalm|vis|gehakt|tofu|tempeh|biefstuk)/.test(n)) return grams(140);
-  if (/(ei|eieren)/.test(n)) {
-    const eggs = Math.max(1, Math.round(servings * (slot === "ontbijt" ? 2 : 1.5)));
-    return `${eggs} ${eggs === 1 ? "stuk" : "stuks"}`;
-  }
-  if (/(bonen|linzen|kikkererwten)/.test(n)) return grams(120);
-
-  if (/(havermout|muesli|granola)/.test(n)) return grams(50);
-  if (/(rijst|quinoa|couscous|pasta)/.test(n)) return grams(slot === "diner" ? 75 : 60);
-  if (/(aardappel|zoete aardappel)/.test(n)) return grams(180);
-
-  if (/(rucola|sla|spinazie|boerenkool|andijvie|paksoi)/.test(n)) return grams(70);
-  if (/(courgette|paprika|broccoli|wortel|komkommer|tomaat|bloemkool)/.test(n)) return grams(120);
-
-  if (/(feta|geitenkaas|parmezaan|mozzarella|kaas)/.test(n)) return grams(30);
-  if (/(zout|peper|kaneel|komijn|kurkuma|paprika|oregano|tijm|kruiden|specerij)/.test(n)) return "1 tl";
-  if (/(olie|olijfolie|azijn|sojasaus|tamari|honing|mosterd|citroensap|limoensap)/.test(n)) return "1 el";
-  return grams(80);
-}
-
-function parseNumericAmount(amount: string): number | null {
-  const m = amount.trim().match(/^(\d+(?:[.,]\d+)?)/);
-  if (!m) return null;
-  const n = Number(m[1].replace(",", "."));
-  return Number.isFinite(n) ? n : null;
-}
-
-function snap(value: number, steps: number[]): number {
-  let best = steps[0];
-  let bestDiff = Math.abs(value - best);
-  for (const s of steps) {
-    const d = Math.abs(value - s);
-    if (d < bestDiff) {
-      best = s;
-      bestDiff = d;
-    }
-  }
-  return best;
-}
-
-function normalizeAmountFromCategory(name: string, amount: string, meal: WeekPlanMeal): string {
-  const n = name.toLowerCase();
-  const parsed = parseNumericAmount(amount);
-  const slot = meal.slot;
-
-  if (/(griekse yoghurt|yoghurt|kwark|skyr)/.test(n)) {
-    const target = slot === "ontbijt" ? 200 : slot === "tussendoortje" ? 150 : 150;
-    const v = parsed ?? target;
-    return `${snap(v, [150, 175, 200, 225, 250])} g`;
-  }
-  if (/(aardbei|blauwe bes|framboos|bramen|druiven)/.test(n)) {
-    const v = parsed ?? 100;
-    return `${snap(v, [50, 75, 100, 125, 150])} g`;
-  }
-  if (/(walnoot|amandel|cashew|pecan|hazelnoot|pistache|notenmix)/.test(n)) {
-    const v = parsed ?? 20;
-    return `${snap(v, [10, 15, 20, 25, 30])} g`;
-  }
-  if (/(pompoenpit|zonnebloempit|chia|lijnzaad|sesamzaad|hennepzaad)/.test(n)) {
-    const v = parsed ?? 10;
-    return `${snap(v, [5, 10, 15, 20])} g`;
-  }
-  return amount;
+function hasValidUnit(amount: string): boolean {
+  const raw = amount.trim().toLowerCase();
+  if (!raw) return false;
+  return /(g|gram|kg|ml|l|tl|theelepel|el|eetlepel|stuk|stuks|teen|snufje)/.test(raw);
 }
 
 export async function POST(request: Request) {
@@ -229,56 +122,64 @@ ${JSON.stringify(profile ?? {})}
 Maaltijd (bron):
 ${JSON.stringify(meal)}
     `.trim();
+    let nextIngredients: Array<{ name: string; amount: string; note: string | null }> = [];
+    let nextSteps: string[] = [];
+    let nextKidTip: string | null = null;
+    let success = false;
 
-    const message = await anthropic.messages.create({
-      model,
-      temperature: 0,
-      max_tokens: qualityMode ? 4096 : 2048,
-      messages: [{ role: "user", content: prompt }],
-    });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const promptWithRetry =
+        attempt === 0
+          ? prompt
+          : `${prompt}\n\nJe vorige output miste valide eenheden of was inconsistent met de stappen. Genereer opnieuw met duidelijke keuken-eenheden per ingrediënt.`;
 
-    const text = message.content
-      .map((c) =>
-        c && typeof c === "object" && "type" in c && c.type === "text" && "text" in c
-          ? String((c as { text: unknown }).text ?? "")
-          : "",
-      )
-      .join("\n")
-      .trim();
-    const parsed = parseJsonFromClaudeText(text) as {
-      ingredients?: Array<{ name?: unknown; amount?: unknown; note?: unknown }>;
-      steps?: unknown[];
-      kid_tip?: unknown;
-    };
+      const message = await anthropic.messages.create({
+        model,
+        temperature: 0,
+        max_tokens: qualityMode ? 4096 : 2048,
+        messages: [{ role: "user", content: promptWithRetry }],
+      });
 
-    const nextIngredients = Array.isArray(parsed.ingredients)
-      ? parsed.ingredients
-          .map((ing) => ({
-            name: String(ing?.name ?? "").trim(),
-            amount: String(ing?.amount ?? "").trim(),
-            note: typeof ing?.note === "string" ? ing.note.trim() : null,
-          }))
-          .map((ing) => {
-            const amountRaw = ing.amount;
-            if (!amountRaw || amountRaw.toLowerCase() === "naar smaak") {
-              return { ...ing, amount: inferAmountFromName(ing.name, meal) };
-            }
-            if (/^\d+([.,]\d+)?$/.test(amountRaw)) {
-              return { ...ing, amount: `${amountRaw} g` };
-            }
-            return ing;
-          })
-          .map((ing) => ({
-            ...ing,
-            amount: normalizeAmountFromCategory(ing.name, ing.amount, meal),
-          }))
-          .filter((ing) => ing.name)
-      : [];
-    const nextSteps = Array.isArray(parsed.steps)
-      ? parsed.steps.map((s) => String(s ?? "").trim()).filter(Boolean)
-      : [];
+      const text = message.content
+        .map((c) =>
+          c && typeof c === "object" && "type" in c && c.type === "text" && "text" in c
+            ? String((c as { text: unknown }).text ?? "")
+            : "",
+        )
+        .join("\n")
+        .trim();
+      const parsed = parseJsonFromClaudeText(text) as {
+        ingredients?: Array<{ name?: unknown; amount?: unknown; note?: unknown }>;
+        steps?: unknown[];
+        kid_tip?: unknown;
+      };
 
-    if (nextIngredients.length < 3 || nextSteps.length < 2) {
+      const ingredientsCandidate = Array.isArray(parsed.ingredients)
+        ? parsed.ingredients
+            .map((ing) => ({
+              name: String(ing?.name ?? "").trim(),
+              amount: normalizeAmountText(String(ing?.amount ?? "")),
+              note: typeof ing?.note === "string" ? ing.note.trim() : null,
+            }))
+            .filter((ing) => ing.name.length > 0)
+        : [];
+      const stepsCandidate = Array.isArray(parsed.steps)
+        ? parsed.steps.map((s) => String(s ?? "").trim()).filter(Boolean)
+        : [];
+
+      const unitsOk = ingredientsCandidate.every((ing) => hasValidUnit(ing.amount));
+      if (ingredientsCandidate.length >= 3 && stepsCandidate.length >= 2 && unitsOk) {
+        nextIngredients = ingredientsCandidate;
+        nextSteps = stepsCandidate;
+        nextKidTip = typeof parsed.kid_tip === "string" && parsed.kid_tip.trim()
+          ? parsed.kid_tip.trim()
+          : null;
+        success = true;
+        break;
+      }
+    }
+
+    if (!success) {
       return NextResponse.json(
         { error: "Receptdetails konden niet betrouwbaar worden aangevuld." },
         { status: 422 },
@@ -287,8 +188,8 @@ ${JSON.stringify(meal)}
 
     meal.ingredients = nextIngredients;
     meal.steps = nextSteps;
-    if (typeof parsed.kid_tip === "string" && parsed.kid_tip.trim()) {
-      meal.kid_tip = parsed.kid_tip.trim();
+    if (nextKidTip) {
+      meal.kid_tip = nextKidTip;
     }
 
     const { error: upErr } = await supabase
