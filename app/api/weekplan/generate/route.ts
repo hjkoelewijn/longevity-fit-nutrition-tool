@@ -16,7 +16,6 @@ import {
   checkDigestiveGuardrails,
   validateWeekPlanPayload,
 } from "@/lib/weekplan/validate-ai-output";
-import { servingsFromProfile } from "@/lib/weekplan/household-servings";
 
 /** Vercel/server: ruimere max uitvoeringstijd i.v.m. lange JSON + retry/repair. */
 export const maxDuration = 300;
@@ -44,24 +43,6 @@ function normalizeIngredientAmounts(payload: WeekPlanPayload) {
           ing.amount = `${raw} g`;
         }
       }
-    }
-  }
-}
-
-function enforceLeftoverDinnerServings(payload: WeekPlanPayload, householdServings: number) {
-  for (let i = 1; i < payload.days.length; i++) {
-    const lunch = payload.days[i]?.meals?.lunch;
-    const prevDinner = payload.days[i - 1]?.meals?.diner;
-    if (!lunch || !prevDinner) continue;
-    const lunchTitle = String(lunch.title ?? "").toLowerCase();
-    const lunchUsesLeftovers =
-      lunch.repeat_for_leftovers === true ||
-      lunchTitle.includes("restjes") ||
-      lunchTitle.includes("leftover");
-    if (!lunchUsesLeftovers) continue;
-    const minDinnerServings = Math.max(2, householdServings + 1);
-    if (typeof prevDinner.servings !== "number" || prevDinner.servings < minDinnerServings) {
-      prevDinner.servings = minDinnerServings;
     }
   }
 }
@@ -202,7 +183,7 @@ export async function POST(request: Request) {
       .limit(1)
       .maybeSingle();
 
-    const servings = servingsFromProfile(profile as unknown as Record<string, unknown>);
+    const servings = 1;
     const previousWeekDinnerTitles =
       prevPlan?.payload && typeof prevPlan.payload === "object"
         ? uniqueDinnerTitles(prevPlan.payload as unknown as WeekPlanPayload).slice(0, 20)
@@ -410,7 +391,7 @@ export async function POST(request: Request) {
     for (const day of payload.days) {
       day.meals.ontbijt.servings = 1;
       day.meals.lunch.servings = 1;
-      day.meals.diner.servings = servings;
+      day.meals.diner.servings = 1;
       for (const snack of day.tussendoortjes ?? []) {
         snack.servings = 1;
       }
@@ -428,7 +409,6 @@ export async function POST(request: Request) {
         }
       }
     }
-    enforceLeftoverDinnerServings(payload, servings);
     normalizeIngredientAmounts(payload);
     const allergies = Array.isArray(profile.allergies)
       ? (profile.allergies as unknown[]).filter(

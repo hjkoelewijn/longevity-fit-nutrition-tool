@@ -28,9 +28,7 @@ const slotLabel: Record<string, string> = {
 };
 
 function servingsLabel(slot: string, servings: number): string {
-  return slot === "diner"
-    ? `${servings} porties (gezin)`
-    : `${servings} portie (per persoon)`;
+  return servings === 1 ? `1 portie (${slotLabel[slot] ?? slot})` : `${servings} porties`;
 }
 
 /**
@@ -329,7 +327,7 @@ export function WeekplanClient({
             {initialPlan.snacks_enabled ? " · met tussendoortjes" : ""}
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-stone-500">
-            <li>Portieregel: diner = gezin, ontbijt/lunch/tussendoortjes = per persoon.</li>
+            <li>Portieregel: alle recepten hebben een basisportie van 1 en zijn schaalbaar.</li>
             <li>
               Intuïtief eten: zie porties als richtlijn en luister naar trek/verzadiging
               (actieve dag = vaak meer trek).

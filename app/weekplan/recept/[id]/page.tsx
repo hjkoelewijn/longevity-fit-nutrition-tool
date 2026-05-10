@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import type { WeekPlanPayload } from "@/lib/weekplan/types";
 import { carbProfileNl } from "@/lib/weekplan/carb-labels";
+import { scaleAmountText } from "@/lib/weekplan/amount-scale";
 import { findMealById } from "@/lib/weekplan/meals-helpers";
 import { signOutAction } from "../../../dashboard/actions";
 import RecipeHydrationTrigger from "./recipe-hydration-trigger";
@@ -18,57 +19,13 @@ const slotNl: Record<string, string> = {
 };
 
 function servingsLabel(slot: string, servings: number): string {
-  return slot === "diner"
-    ? `${servings} porties (gezin)`
-    : `${servings} portie (per persoon)`;
+  return servings === 1 ? `1 portie (${slotNl[slot] ?? slot})` : `${servings} porties`;
 }
 
-function formatAmount(amount: string): string {
+function formatAmountWithIngredient(amount: string, scaleFactor: number): string {
   const raw = amount.trim();
-  if (!raw) return "";
-  if (/^\d+([.,]\d+)?$/.test(raw)) {
-    return `${raw} g`;
-  }
-  return raw;
-}
-
-function formatAmountWithIngredient(name: string, amount: string): string {
-  const raw = amount.trim();
-  const ingredient = name.toLowerCase();
-  const spiceLike =
-    /(zout|peper|kaneel|komijn|kurkuma|paprika|oregano|tijm|venkel|specerij|kruiden|knoflookpoeder|uienpoeder|chilipoeder)/.test(
-      ingredient,
-    );
-  const liquidLike =
-    /(olijfolie|olie|azijn|citroensap|limoensap|sojasaus|tamari|honing|mosterd)/.test(
-      ingredient,
-    );
-
-  if (!raw) {
-    return "hoeveelheid volgt";
-  }
-
-  const asNumber = Number(raw.replace(",", "."));
-  if (Number.isFinite(asNumber) && /^\d+([.,]\d+)?$/.test(raw)) {
-    if (spiceLike && asNumber <= 1) return "snufje";
-    if (spiceLike && asNumber <= 5) return `${Math.max(1, Math.round(asNumber / 2))} tl`;
-    if (liquidLike && asNumber <= 15) return `${Math.max(1, Math.round(asNumber / 5))} tl`;
-    if (liquidLike && asNumber <= 45) return `${Math.max(1, Math.round(asNumber / 15))} el`;
-    return `${raw} g`;
-  }
-
-  const gramsMatch = raw.match(/^(\d+(?:[.,]\d+)?)\s*g$/i);
-  if (gramsMatch) {
-    const g = Number(gramsMatch[1].replace(",", "."));
-    if (Number.isFinite(g)) {
-      if (spiceLike && g <= 1) return "snufje";
-      if (spiceLike && g <= 5) return `${Math.max(1, Math.round(g / 2))} tl`;
-      if (liquidLike && g <= 15) return `${Math.max(1, Math.round(g / 5))} tl`;
-      if (liquidLike && g <= 45) return `${Math.max(1, Math.round(g / 15))} el`;
-    }
-  }
-
-  return formatAmount(raw);
+  if (!raw) return "hoeveelheid volgt";
+  return scaleAmountText(raw, scaleFactor);
 }
 
 
@@ -98,6 +55,11 @@ export default async function WeekplanReceptPage(props: {
   const searchParams = (await props.searchParams) ?? {};
   const mpRaw = searchParams.mp;
   const mp = typeof mpRaw === "string" ? mpRaw.trim() : "";
+  const scaleRaw = typeof searchParams.s === "string" ? searchParams.s : "";
+  const parsedScale = Number.parseInt(scaleRaw, 10);
+  const scaleFactor = Number.isFinite(parsedScale)
+    ? Math.min(8, Math.max(1, parsedScale))
+    : 1;
 
   if (!mp) {
     notFound();
@@ -172,9 +134,32 @@ export default async function WeekplanReceptPage(props: {
             Binnen onze richtlijnen
           </Link>
           <p className="mt-2 text-sm text-stone-600">
-            {meal.prep_minutes} min · {servingsLabel(meal.slot, meal.servings)} · koolhydraatmoment:{" "}
+            {meal.prep_minutes} min · {servingsLabel(meal.slot, scaleFactor)} · koolhydraatmoment:{" "}
             {carbProfileNl(meal.carb_profile)}
           </p>
+          <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3">
+            <p className="text-xs text-stone-600">
+              Basisrecept is <strong>1 portie</strong>. Schaal hieronder naar het aantal porties dat je nodig hebt.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {([1, 2, 3, 4, 5, 6, 7, 8] as const).map((n) => {
+                const active = n === scaleFactor;
+                return (
+                  <Link
+                    key={n}
+                    href={`/weekplan/recept/${encodeURIComponent(meal.id)}?mp=${mp}&s=${n}`}
+                    className={`rounded-lg border px-2.5 py-1 text-xs font-medium ${
+                      active
+                        ? "border-stone-900 bg-stone-900 text-white"
+                        : "border-stone-300 bg-white text-stone-700 hover:bg-stone-100"
+                    }`}
+                  >
+                    x{n}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
           <p className="mt-2 text-xs text-stone-500">
             Intuïtief eten: zie porties als richtlijn. Luister naar trek/verzadiging
             (actieve dag = vaak meer trek). Begin op je bord met groente + eiwit,
@@ -204,10 +189,7 @@ export default async function WeekplanReceptPage(props: {
                   <li key={i}>
                     <span className="font-medium">{String(ing.name ?? "Ingrediënt")}</span>{" "}
                     <span className="text-stone-600">
-                      {formatAmountWithIngredient(
-                        String(ing.name ?? "Ingrediënt"),
-                        String(ing.amount ?? ""),
-                      )}
+                      {formatAmountWithIngredient(String(ing.amount ?? ""), scaleFactor)}
                     </span>
                     {ing.note ? (
                       <span className="text-stone-500"> ({String(ing.note)})</span>
@@ -241,7 +223,7 @@ export default async function WeekplanReceptPage(props: {
 
           <div className="mt-10 flex flex-wrap gap-4 border-t border-stone-200 pt-8 text-sm">
             <Link
-              href={`/weekplan/boodschappen?mp=${mp}`}
+              href={`/weekplan/boodschappen?mp=${mp}&s=${scaleFactor}`}
               className="font-medium text-stone-900 underline-offset-4 hover:underline"
             >
               Boodschappen

@@ -6,7 +6,6 @@ import { parseJsonFromClaudeText } from "@/lib/weekplan/parse-ai-json";
 import type { WeekPlanPayload } from "@/lib/weekplan/types";
 import { validateWeekPlanPayload } from "@/lib/weekplan/validate-ai-output";
 import { buildShoppingListInsertPayload } from "@/lib/weekplan/shopping-storage";
-import { servingsFromProfile } from "@/lib/weekplan/household-servings";
 
 export const maxDuration = 300;
 
@@ -28,24 +27,6 @@ function normalizeIngredientAmounts(payload: WeekPlanPayload) {
           ing.amount = `${raw} g`;
         }
       }
-    }
-  }
-}
-
-function enforceLeftoverDinnerServings(payload: WeekPlanPayload, householdServings: number) {
-  for (let i = 1; i < payload.days.length; i++) {
-    const lunch = payload.days[i]?.meals?.lunch;
-    const prevDinner = payload.days[i - 1]?.meals?.diner;
-    if (!lunch || !prevDinner) continue;
-    const lunchTitle = String(lunch.title ?? "").toLowerCase();
-    const lunchUsesLeftovers =
-      lunch.repeat_for_leftovers === true ||
-      lunchTitle.includes("restjes") ||
-      lunchTitle.includes("leftover");
-    if (!lunchUsesLeftovers) continue;
-    const minDinnerServings = Math.max(2, householdServings + 1);
-    if (typeof prevDinner.servings !== "number" || prevDinner.servings < minDinnerServings) {
-      prevDinner.servings = minDinnerServings;
     }
   }
 }
@@ -91,9 +72,6 @@ export async function POST(request: Request) {
       .select("*")
       .eq("id", user.id)
       .maybeSingle();
-    const targetDinnerServings = servingsFromProfile(
-      (profile ?? {}) as unknown as Record<string, unknown>,
-    );
 
     const system = await loadLongevitySystemPrompt();
     const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
@@ -112,7 +90,7 @@ Belangrijk:
 - Breid per maaltijd ingrediënten uit naar bruikbare hoeveelheden.
 - Breid bereiding uit naar 3-6 duidelijke stappen per maaltijd.
 - Behoud shopping_list en always_in_stock, maar verbeter waar nodig op consistentie.
-- Porties: zet diner op servings = ${targetDinnerServings} (1 volwassene = 1 portie, 1 kind = 1 portie) en zet ontbijt/lunch/tussendoortjes op servings = 1 per persoon. Pas ingrediënt-hoeveelheden proportioneel aan als het oude plan een ander aantal porties had.
+- Porties: zet voor alle maaltijden servings = 1 als basisportie. Pas ingrediënt-hoeveelheden aan zodat alles consistent blijft met 1 portie.
 - Geen markdown, geen extra tekst.
 
 Actueel profiel (JSON) voor context:
@@ -163,12 +141,11 @@ ${JSON.stringify(payload)}
     for (const day of nextPayload.days) {
       day.meals.ontbijt.servings = 1;
       day.meals.lunch.servings = 1;
-      day.meals.diner.servings = targetDinnerServings;
+      day.meals.diner.servings = 1;
       for (const snack of day.tussendoortjes ?? []) {
         snack.servings = 1;
       }
     }
-    enforceLeftoverDinnerServings(nextPayload, targetDinnerServings);
     normalizeIngredientAmounts(nextPayload);
     const shoppingPayload = buildShoppingListInsertPayload(nextPayload);
 

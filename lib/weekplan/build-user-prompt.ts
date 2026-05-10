@@ -172,7 +172,7 @@ Taken:
 - **always_in_stock:** aparte lijst “altijd op voorraad” — dingen die je (eenmalig) goed op voorraad hebt om **snel** een voedzame maaltijd te kunnen maken (oliën, azijn, basis specerijen, voorraadpotjes, diepvriesbasis, etc.). Korte **intro** waarin duidelijk is dat dit een **investering** is die drukke dagen lichter maakt; geen perfectionisme.
 - **prep_minutes** per gerecht: sluit aan bij **raw_profile.cooking_time_weekday** en **raw_profile.cooking_time_weekend** (beschikbare kooktijd). Meer tijd in het profiel → recepten mogen iets uitgebreider; weinig tijd → maximaal efficiënt en stressvrij, zonder “tekort”-gevoel.
 - Ingrediënten: gebruik altijd duidelijke hoeveelheden mét eenheid (bijv. g, ml, el, tl, stuk/stuks). Vermijd kale getallen zonder eenheid.
-- Porties: voor **diner** gebruik je servings = ${bundle.servings} (gezin). Voor **ontbijt/lunch/tussendoortjes** gebruik je servings = 1 (per persoon).
+- Porties: gebruik voor **alle maaltijden** servings = 1 als basisportie (ontbijt, lunch, diner en tussendoortjes).
 - Intuïtief eten: behandel porties als **richtlijn**, niet als dwang. Op actievere dagen of bij meer trek mag iemand opschalen; bij minder trek mag het omlaag. Geef in toon en opbouw ruimte voor honger/verzadiging.
 - Praktische bordvolgorde volgens Longevity Fit: start met groente + eiwit, daarna vetten, daarna (waar passend) koolhydraten.
 
@@ -180,7 +180,7 @@ Kooksessies (cook_sessions_per_week = ${bundle.cookSessionsPerWeek}):
 - Dit is het aantal keer per week dat iemand bewust kookt (warm/groter bereiden, batch), niet “elke maaltijd vers”.
 - Andere dagen: restjes/herhaling (zet repeat_for_leftovers waar logisch), tweede dag hetzelfde gerecht of voorbereid uit eerdere sessie. Houd rekening met eating_pattern uit raw_profile (o.a. eat_out_per_week) voor hoe vaak uit eten past — geen harde aannames buiten profiel.
 - Bij 3 sessies: plan vaker dubbele porties of dezelfde schotel opnieuw (lunch volgende dag) zodat 7 dagen haalbaar blijft zonder elke avond lang koken.
-- Als lunch op dag N restjes van diner dag N-1 gebruikt, verhoog diner-porties op dag N-1 zodat er echt voldoende overblijft.
+- Als lunch op dag N restjes van diner dag N-1 gebruikt, benoem dit in titel/repeat_for_leftovers zonder servings kunstmatig te verhogen.
 
 ${digestiveGuardrailBlock}
 
