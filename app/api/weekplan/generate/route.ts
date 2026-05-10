@@ -10,7 +10,7 @@ import {
   pantryStaplesAsPseudoMeals,
   uniqueDinnerTitles,
 } from "@/lib/weekplan/meals-helpers";
-import { buildShoppingListInsertPayload } from "@/lib/weekplan/shopping-storage";
+import { weekShoppingPayloadForInsert } from "@/lib/weekplan/rebuild-weekly-shopping";
 import {
   checkAllergiesInMeals,
   checkDigestiveGuardrails,
@@ -476,7 +476,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const shoppingPayload = buildShoppingListInsertPayload(payload);
+    const shoppingPayload = weekShoppingPayloadForInsert(payload);
 
     const { error: shopErr } = await supabase.from("shopping_lists").insert({
       user_id: user.id,

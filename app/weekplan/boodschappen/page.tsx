@@ -18,11 +18,6 @@ export default async function BoodschappenPage(props: {
   const searchParams = (await props.searchParams) ?? {};
   const mpRaw = searchParams.mp;
   const mp = typeof mpRaw === "string" ? mpRaw.trim() : "";
-  const scaleRaw = typeof searchParams.s === "string" ? searchParams.s : "";
-  const parsedScale = Number.parseInt(scaleRaw, 10);
-  const scaleFactor = Number.isFinite(parsedScale)
-    ? Math.min(8, Math.max(1, parsedScale))
-    : 1;
 
   const supabase = await createClient();
   const {
@@ -80,13 +75,16 @@ export default async function BoodschappenPage(props: {
             Boodschappen
           </h1>
           <p className="mt-2 text-sm text-stone-600">
-            Weekboodschappen: vink aan wat je al in huis hebt. De hoeveelheden
-            op de lijst zijn opgebouwd zoals de recepten (uitgangspunt{" "}
-            <strong>1 portie</strong> per maaltijd). Kies hieronder hetzelfde
-            vermenigvuldigtal als op de receptpagina om de lijst inhoudelijk mee
-            te schalen. Onder «Altijd op voorraad» staat je basisvoorraad (die
-            laten we voor nu ongewijzigd). De lijst hoort bij je meest recente
-            weekplan, tenzij je een specifiek plan kiest via de weekpagina.
+            Weekboodschappen: vink aan wat je al in huis hebt. Deze lijst wordt telkens
+            herbouwd uit{" "}
+            <strong className="font-medium text-stone-700">alle gerechten</strong> in je
+            weekplan, waarbij per maaltijd de hoeveelheden meetellen volgens wat je op de
+            receptpagina hebt ingesteld (<strong className="font-medium text-stone-700">
+              opgeslagen x1–x8
+            </strong>
+            ; waar je niets aanpast geldt automatisch ×1). Onder «Altijd op voorraad» staat
+            je basisvoorraad-checklist. Zonder gekozen plan zie je de lijst van je meest
+            recente weekplan; vanaf de weekpagina kun je een specifiek plan openen.
           </p>
 
           {!row ? (
@@ -104,8 +102,6 @@ export default async function BoodschappenPage(props: {
             <div className="mt-8">
               <BoodschappenClient
                 shoppingListId={row.id}
-                mealPlanId={(mp || row.meal_plan_id) as string}
-                scaleFactor={scaleFactor}
                 weeklyCategories={weeklyCategories}
                 pantry={pantry}
               />

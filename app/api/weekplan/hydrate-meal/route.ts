@@ -8,6 +8,7 @@ import {
 } from "@/lib/weekplan/portion-amount-guidelines";
 import type { WeekPlanMeal, WeekPlanPayload } from "@/lib/weekplan/types";
 import { createClient } from "@/utils/supabase/server";
+import { rebuildAndPersistWeeklyShopping } from "@/lib/weekplan/rebuild-weekly-shopping";
 
 export const maxDuration = 180;
 
@@ -351,6 +352,11 @@ ${JSON.stringify(meal)}
       .eq("id", mealPlanId);
     if (upErr) {
       return NextResponse.json({ error: upErr.message }, { status: 500 });
+    }
+
+    const rb = await rebuildAndPersistWeeklyShopping(supabase, mealPlanId);
+    if (!rb.ok) {
+      return NextResponse.json({ error: rb.error }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true, quality_mode: qualityMode });

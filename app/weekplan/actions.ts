@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
+import type { MealPlanUserMeta } from "@/lib/weekplan/types";
+import { rebuildAndPersistWeeklyShopping } from "@/lib/weekplan/rebuild-weekly-shopping";
 import { setWeeklyItemPantry } from "@/lib/weekplan/shopping-storage";
 
 export async function toggleShoppingPantryAction(input: {
@@ -98,5 +100,60 @@ export async function toggleMealDoneAction(input: {
   }
 
   revalidatePath("/weekplan");
+  return { ok: true as const };
+}
+
+export async function setRecipePortionMultiplierAction(input: {
+  mealPlanId: string;
+  mealId: string;
+  multiplier: number;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { ok: false as const, error: "Niet ingelogd." };
+  }
+
+  const m = Math.floor(Number(input.multiplier));
+  const mult = Number.isFinite(m) ? Math.min(8, Math.max(1, m)) : 1;
+
+  const { data: plan, error: fetchErr } = await supabase
+    .from("meal_plans")
+    .select("id, user_id, user_meta")
+    .eq("id", input.mealPlanId)
+    .maybeSingle();
+
+  if (fetchErr || !plan || plan.user_id !== user.id) {
+    return { ok: false as const, error: "Weekplan niet gevonden." };
+  }
+
+  const meta = (plan.user_meta ?? {}) as MealPlanUserMeta;
+  const nextMultipliers = { ...(meta.recipePortionMultipliers ?? {}), [input.mealId]: mult };
+
+  const { error: upErr } = await supabase
+    .from("meal_plans")
+    .update({
+      user_meta: {
+        ...meta,
+        recipePortionMultipliers: nextMultipliers,
+      } as unknown as Record<string, unknown>,
+    })
+    .eq("id", input.mealPlanId);
+
+  if (upErr) {
+    return { ok: false as const, error: upErr.message };
+  }
+
+  const rb = await rebuildAndPersistWeeklyShopping(supabase, input.mealPlanId);
+  if (!rb.ok) {
+    return { ok: false as const, error: rb.error };
+  }
+
+  revalidatePath("/weekplan");
+  revalidatePath("/weekplan/boodschappen");
+  revalidatePath(`/weekplan/recept/${encodeURIComponent(input.mealId)}`);
+
   return { ok: true as const };
 }

@@ -74,4 +74,6 @@ export type MealPlanUserMeta = {
   hydrationError?: string;
   /** mealId -> vervangen recept-snapshot (optioneel) */
   replacements?: Record<string, WeekPlanMeal>;
+  /** mealId -> 1–8; weekboodschappen worden hiermee herberekend uit de maaltijden */
+  recipePortionMultipliers?: Record<string, number>;
 };

@@ -1,13 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
+
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import type { WeekPlanPayload } from "@/lib/weekplan/types";
+import type { MealPlanUserMeta, WeekPlanPayload } from "@/lib/weekplan/types";
 import { carbProfileNl } from "@/lib/weekplan/carb-labels";
 import { scaleAmountText } from "@/lib/weekplan/amount-scale";
 import { findMealById } from "@/lib/weekplan/meals-helpers";
 import { signOutAction } from "../../../dashboard/actions";
 import RecipeHydrationTrigger from "./recipe-hydration-trigger";
+import { PortionScaleControls } from "./portion-scale-controls";
 
 export const dynamic = "force-dynamic";
 
@@ -55,12 +57,6 @@ export default async function WeekplanReceptPage(props: {
   const searchParams = (await props.searchParams) ?? {};
   const mpRaw = searchParams.mp;
   const mp = typeof mpRaw === "string" ? mpRaw.trim() : "";
-  const scaleRaw = typeof searchParams.s === "string" ? searchParams.s : "";
-  const parsedScale = Number.parseInt(scaleRaw, 10);
-  const scaleFactor = Number.isFinite(parsedScale)
-    ? Math.min(8, Math.max(1, parsedScale))
-    : 1;
-
   if (!mp) {
     notFound();
   }
@@ -76,7 +72,7 @@ export default async function WeekplanReceptPage(props: {
 
   const { data: plan, error } = await supabase
     .from("meal_plans")
-    .select("id, payload, user_id")
+    .select("id, payload, user_id, user_meta")
     .eq("id", mp)
     .maybeSingle();
 
@@ -89,6 +85,12 @@ export default async function WeekplanReceptPage(props: {
   if (!meal) {
     notFound();
   }
+  const meta = (plan.user_meta ?? {}) as MealPlanUserMeta;
+  const rawMult = meta.recipePortionMultipliers?.[meal.id];
+  const scaleFactor =
+    typeof rawMult === "number" && Number.isFinite(rawMult)
+      ? Math.min(8, Math.max(1, Math.floor(rawMult)))
+      : 1;
   const ingredients = Array.isArray(meal.ingredients) ? meal.ingredients : [];
   const steps = Array.isArray(meal.steps) ? meal.steps : [];
   const needsHydration =
@@ -137,29 +139,11 @@ export default async function WeekplanReceptPage(props: {
             {meal.prep_minutes} min · {servingsLabel(meal.slot, scaleFactor)} · koolhydraatmoment:{" "}
             {carbProfileNl(meal.carb_profile)}
           </p>
-          <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3">
-            <p className="text-xs text-stone-600">
-              Basisrecept is <strong>1 portie</strong>. Schaal hieronder naar het aantal porties dat je nodig hebt.
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {([1, 2, 3, 4, 5, 6, 7, 8] as const).map((n) => {
-                const active = n === scaleFactor;
-                return (
-                  <Link
-                    key={n}
-                    href={`/weekplan/recept/${encodeURIComponent(meal.id)}?mp=${mp}&s=${n}`}
-                    className={`rounded-lg border px-2.5 py-1 text-xs font-medium ${
-                      active
-                        ? "border-stone-900 bg-stone-900 text-white"
-                        : "border-stone-300 bg-white text-stone-700 hover:bg-stone-100"
-                    }`}
-                  >
-                    x{n}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
+          <PortionScaleControls
+            mealPlanId={mp}
+            mealId={meal.id}
+            portionMultiplier={scaleFactor}
+          />
           <p className="mt-2 text-xs text-stone-500">
             Intuïtief eten: zie porties als richtlijn. Luister naar trek/verzadiging
             (actieve dag = vaak meer trek). Begin op je bord met groente + eiwit,
@@ -223,7 +207,7 @@ export default async function WeekplanReceptPage(props: {
 
           <div className="mt-10 flex flex-wrap gap-4 border-t border-stone-200 pt-8 text-sm">
             <Link
-              href={`/weekplan/boodschappen?mp=${mp}&s=${scaleFactor}`}
+              href={`/weekplan/boodschappen?mp=${mp}`}
               className="font-medium text-stone-900 underline-offset-4 hover:underline"
             >
               Boodschappen

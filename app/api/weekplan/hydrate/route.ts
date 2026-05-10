@@ -5,7 +5,7 @@ import { loadLongevitySystemPrompt } from "@/lib/weekplan/load-system-prompt";
 import { parseJsonFromClaudeText } from "@/lib/weekplan/parse-ai-json";
 import type { WeekPlanPayload } from "@/lib/weekplan/types";
 import { validateWeekPlanPayload } from "@/lib/weekplan/validate-ai-output";
-import { buildShoppingListInsertPayload } from "@/lib/weekplan/shopping-storage";
+import { rebuildAndPersistWeeklyShopping } from "@/lib/weekplan/rebuild-weekly-shopping";
 
 export const maxDuration = 300;
 
@@ -147,7 +147,6 @@ ${JSON.stringify(payload)}
       }
     }
     normalizeIngredientAmounts(nextPayload);
-    const shoppingPayload = buildShoppingListInsertPayload(nextPayload);
 
     const { error: planUpErr } = await supabase
       .from("meal_plans")
@@ -164,18 +163,9 @@ ${JSON.stringify(payload)}
       return NextResponse.json({ error: planUpErr.message }, { status: 500 });
     }
 
-    const { data: shop } = await supabase
-      .from("shopping_lists")
-      .select("id")
-      .eq("meal_plan_id", mealPlanId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (shop?.id) {
-      await supabase
-        .from("shopping_lists")
-        .update({ payload: shoppingPayload as unknown as Record<string, unknown> })
-        .eq("id", shop.id);
+    const rb = await rebuildAndPersistWeeklyShopping(supabase, mealPlanId);
+    if (!rb.ok) {
+      return NextResponse.json({ error: rb.error }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true });
