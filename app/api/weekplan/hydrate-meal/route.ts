@@ -29,7 +29,9 @@ function findMealRef(payload: WeekPlanPayload, mealId: string): WeekPlanMeal | n
 }
 
 function hasDetails(meal: WeekPlanMeal): boolean {
-  return Array.isArray(meal.ingredients) && meal.ingredients.length > 0 && Array.isArray(meal.steps) && meal.steps.length > 0;
+  if (!Array.isArray(meal.ingredients) || meal.ingredients.length === 0) return false;
+  if (!Array.isArray(meal.steps) || meal.steps.length === 0) return false;
+  return meal.ingredients.every((ing) => hasValidUnit(String(ing?.amount ?? "")));
 }
 
 function normalizeAmountText(amount: string): string {
@@ -42,6 +44,7 @@ function normalizeAmountText(amount: string): string {
 function hasValidUnit(amount: string): boolean {
   const raw = amount.trim().toLowerCase();
   if (!raw) return false;
+  if (raw === "naar smaak") return true;
   return /(g|gram|kg|ml|l|tl|theelepel|el|eetlepel|stuk|stuks|teen|snufje)/.test(raw);
 }
 

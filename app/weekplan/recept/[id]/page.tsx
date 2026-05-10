@@ -47,9 +47,6 @@ function formatAmountWithIngredient(name: string, amount: string): string {
   if (!raw) {
     return "hoeveelheid volgt";
   }
-  if (raw.toLowerCase() === "naar smaak") {
-    return spiceLike ? "naar smaak" : "hoeveelheid volgt";
-  }
 
   const asNumber = Number(raw.replace(",", "."));
   if (Number.isFinite(asNumber) && /^\d+([.,]\d+)?$/.test(raw)) {
@@ -87,6 +84,7 @@ function hasMissingIngredientAmounts(
   return ingredients.some((ing) => {
     const raw = String(ing?.amount ?? "").trim().toLowerCase();
     if (!raw || raw === "hoeveelheid volgt") return true;
+    if (raw === "naar smaak") return false;
     return !/(g|gram|kg|ml|l|tl|theelepel|el|eetlepel|stuk|stuks|teen|snufje)/.test(raw);
   });
 }
