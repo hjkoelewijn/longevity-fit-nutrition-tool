@@ -21,16 +21,36 @@ export default function RecipeHydrationTrigger({ mealPlanId, mealId, enabled }: 
     async function run() {
       try {
         setPhase("fast");
-        const fast = await fetch("/api/weekplan/hydrate-meal", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            meal_plan_id: mealPlanId,
-            meal_id: mealId,
-            quality_mode: false,
-            force: false,
-          }),
-        });
+        async function fillMeal(force: boolean) {
+          return fetch("/api/weekplan/hydrate-meal", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              meal_plan_id: mealPlanId,
+              meal_id: mealId,
+              quality_mode: false,
+              force,
+            }),
+          });
+        }
+
+        let fast = await fillMeal(false);
+        let data: { ok?: boolean; skipped?: boolean } = {};
+        try {
+          data = (await fast.json()) as { ok?: boolean; skipped?: boolean };
+        } catch {
+          data = {};
+        }
+
+        if (!fast.ok || data.skipped) {
+          fast = await fillMeal(true);
+          try {
+            data = (await fast.json()) as { ok?: boolean; skipped?: boolean };
+          } catch {
+            data = {};
+          }
+        }
+
         if (!fast.ok) {
           throw new Error("Snelle aanvulling mislukt.");
         }

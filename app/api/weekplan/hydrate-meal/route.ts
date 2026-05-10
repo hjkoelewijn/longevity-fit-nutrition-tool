@@ -1,6 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { parseJsonFromClaudeText } from "@/lib/weekplan/parse-ai-json";
+import {
+  ONE_PORTION_AMOUNT_GUIDELINES_PROMPT,
+  PORTION_PLAUSIBILITY_RETRY_HINT,
+  onePortionProteinAmountsPlausible,
+} from "@/lib/weekplan/portion-amount-guidelines";
 import type { WeekPlanMeal, WeekPlanPayload } from "@/lib/weekplan/types";
 import { createClient } from "@/utils/supabase/server";
 
@@ -52,6 +57,14 @@ function escapeRegex(input: string): string {
   return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function normalizeUnitToken(unitRaw: string): string {
+  const unit = unitRaw.toLowerCase();
+  if (unit === "gram") return "g";
+  if (unit.startsWith("theelepel")) return "tl";
+  if (unit.startsWith("eetlepel")) return "el";
+  return unit;
+}
+
 function extractAmountFromSteps(ingredientName: string, steps: string[]): string {
   const name = ingredientName.trim();
   if (!name || !Array.isArray(steps) || steps.length === 0) return "";
@@ -64,19 +77,63 @@ function extractAmountFromSteps(ingredientName: string, steps: string[]): string
     const amountMatch = step.match(amountPattern);
     if (!amountMatch) continue;
     const value = amountMatch[1];
-    const unit = amountMatch[2].toLowerCase();
-    const normalizedUnit =
-      unit === "gram"
-        ? "g"
-        : unit.startsWith("theelepel")
-          ? "tl"
-          : unit.startsWith("eetlepel")
-            ? "el"
-            : unit;
-    return `${value} ${normalizedUnit}`;
+    const unit = normalizeUnitToken(amountMatch[2]);
+    return `${value} ${unit}`;
+  }
+
+  const keywords = ingredientKeywords(name);
+  const blob = steps.join("\n");
+  for (const kw of keywords) {
+    const low = blob.toLowerCase();
+    let idx = 0;
+    while (idx !== -1) {
+      idx = low.indexOf(kw, idx);
+      if (idx === -1) break;
+      const window = blob.slice(Math.max(0, idx - 110), idx + 110);
+      const amountMatch = window.match(amountPattern);
+      if (amountMatch) {
+        return `${amountMatch[1]} ${normalizeUnitToken(amountMatch[2])}`;
+      }
+      idx += kw.length;
+    }
   }
 
   return "";
+}
+
+const INGREDIENT_KEYWORD_STOP = new Set([
+  "met",
+  "en",
+  "van",
+  "voor",
+  "de",
+  "het",
+  "een",
+  "hetzelfde",
+  "verse",
+  "vers",
+  "gekookt",
+  "gekookte",
+  "gegrild",
+  "gegrilde",
+  "biologisch",
+  "extra",
+  "zwarte",
+  "witte",
+  "bot",
+  "restje",
+  "restjes",
+]);
+
+function ingredientKeywords(name: string): string[] {
+  const parts = name
+    .toLowerCase()
+    .split(/[\s,–—\-]+/)
+    .map((w) => w.replace(/[()]/g, "").trim())
+    .filter((w) => w.length >= 3 && !INGREDIENT_KEYWORD_STOP.has(w));
+  const uniq = [...new Set(parts)];
+  uniq.sort((a, b) => b.length - a.length);
+  return uniq.slice(0, 5);
 }
 
 export async function POST(request: Request) {
@@ -172,6 +229,8 @@ Regels:
 - 3-7 korte bereidingsstappen.
 - Houd rekening met profielcontext en maaltijdslot.
 - Ingrediëntenlijst en bereidingsstappen moeten qua hoeveelheden consistent zijn.
+- Alle hoeveelheden zijn voor **1 portie** (gebruikers schalen in de app); geen gezinshoeveelheden in dit recept.
+${ONE_PORTION_AMOUNT_GUIDELINES_PROMPT}
 - Geen markdown, geen extra tekst.
 
 Profielcontext:
@@ -184,6 +243,7 @@ ${JSON.stringify(meal)}
     let nextSteps: string[] = [];
     let nextKidTip: string | null = null;
     let success = false;
+    let lastFailedPlausibility = false;
 
     for (let attempt = 0; attempt < 2; attempt++) {
       const promptWithRetry =
@@ -191,7 +251,11 @@ ${JSON.stringify(meal)}
           ? prompt
           : polishOnly
             ? `${prompt}\n\nJe vorige output was niet valide. Genereer opnieuw met alleen stappen en optionele kid_tip.`
-            : `${prompt}\n\nJe vorige output miste valide eenheden of was inconsistent met de stappen. Genereer opnieuw met duidelijke keuken-eenheden per ingrediënt.`;
+            : `${prompt}\n\n---\n${
+                lastFailedPlausibility
+                  ? `${PORTION_PLAUSIBILITY_RETRY_HINT}\n`
+                  : ""
+              }Je vorige output miste valide eenheden of was inconsistent met de stappen — of de grammen klopten niet voor exact **1 portie**. Genereer opnieuw met realistische hoeveelheden en duidelijke keuken-eenheden per ingrediënt.`;
 
       const message = await anthropic.messages.create({
         model,
@@ -244,7 +308,17 @@ ${JSON.stringify(meal)}
       });
 
       const unitsOk = ingredientsCandidate.every((ing) => hasValidUnit(ing.amount));
-      if (ingredientsCandidate.length >= 3 && stepsCandidate.length >= 2 && unitsOk) {
+      const plausible = onePortionProteinAmountsPlausible({
+        ...meal,
+        ingredients: ingredientsCandidate,
+        steps: stepsCandidate,
+      });
+      if (
+        ingredientsCandidate.length >= 3 &&
+        stepsCandidate.length >= 2 &&
+        unitsOk &&
+        plausible
+      ) {
         nextIngredients = ingredientsCandidate;
         nextSteps = stepsCandidate;
         nextKidTip = typeof parsed.kid_tip === "string" && parsed.kid_tip.trim()
@@ -252,6 +326,9 @@ ${JSON.stringify(meal)}
           : null;
         success = true;
         break;
+      }
+      if (unitsOk && !plausible) {
+        lastFailedPlausibility = true;
       }
     }
 

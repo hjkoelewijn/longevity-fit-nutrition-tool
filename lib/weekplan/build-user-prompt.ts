@@ -1,4 +1,5 @@
 import { KOOLHYDRAATMOMENT_UITLEG_VOOR_PROMPT, ZOETE_AARDAPPEL_REGEL_EEN_ZIN } from "./carb-moment-rules";
+import { ONE_PORTION_AMOUNT_GUIDELINES_PROMPT } from "./portion-amount-guidelines";
 
 export type ProfileBundle = {
   profile: Record<string, unknown>;
@@ -173,6 +174,8 @@ Taken:
 - **prep_minutes** per gerecht: sluit aan bij **raw_profile.cooking_time_weekday** en **raw_profile.cooking_time_weekend** (beschikbare kooktijd). Meer tijd in het profiel → recepten mogen iets uitgebreider; weinig tijd → maximaal efficiënt en stressvrij, zonder “tekort”-gevoel.
 - Ingrediënten: gebruik altijd duidelijke hoeveelheden mét eenheid (bijv. g, ml, el, tl, stuk/stuks). Vermijd kale getallen zonder eenheid.
 - Porties: gebruik voor **alle maaltijden** servings = 1 als basisportie (ontbijt, lunch, diner en tussendoortjes).
+
+${ONE_PORTION_AMOUNT_GUIDELINES_PROMPT}
 - Intuïtief eten: behandel porties als **richtlijn**, niet als dwang. Op actievere dagen of bij meer trek mag iemand opschalen; bij minder trek mag het omlaag. Geef in toon en opbouw ruimte voor honger/verzadiging.
 - Praktische bordvolgorde volgens Longevity Fit: start met groente + eiwit, daarna vetten, daarna (waar passend) koolhydraten.
 
