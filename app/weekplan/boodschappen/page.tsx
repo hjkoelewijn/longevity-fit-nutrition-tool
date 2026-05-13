@@ -2,10 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import type { AlwaysInStockBlock } from "@/lib/weekplan/types";
+import type { MealPlanUserMeta } from "@/lib/weekplan/types";
 import {
+  dinnersFromStoredPayload,
+  lunchesFromStoredPayload,
   pantryFromStoredPayload,
-  weeklyCategoriesFromStoredPayload,
 } from "@/lib/weekplan/shopping-storage";
 import { BoodschappenClient } from "./boodschappen-client";
 import { signOutAction } from "../../dashboard/actions";
@@ -51,12 +52,25 @@ export default async function BoodschappenPage(props: {
     );
   }
 
-  const weeklyCategories = row
-    ? weeklyCategoriesFromStoredPayload(row.payload)
-    : [];
-  const pantry: AlwaysInStockBlock = row
-    ? pantryFromStoredPayload(row.payload)
-    : { intro: null, categories: [] };
+  const lunches = row ? lunchesFromStoredPayload(row.payload) : [];
+  const dinners = row ? dinnersFromStoredPayload(row.payload) : [];
+  const pantryIntro = row ? pantryFromStoredPayload(row.payload).intro : null;
+
+  let householdSize = 1;
+  if (row) {
+    const { data: planRow } = await supabase
+      .from("meal_plans")
+      .select("user_meta")
+      .eq("id", row.meal_plan_id)
+      .maybeSingle();
+    const meta = (planRow?.user_meta ?? {}) as MealPlanUserMeta;
+    if (
+      typeof meta.dinerHouseholdSize === "number" &&
+      Number.isFinite(meta.dinerHouseholdSize)
+    ) {
+      householdSize = Math.min(8, Math.max(1, Math.floor(meta.dinerHouseholdSize)));
+    }
+  }
 
   return (
     <main className="min-h-screen bg-stone-50 px-6 py-16">
@@ -75,16 +89,12 @@ export default async function BoodschappenPage(props: {
             Boodschappen
           </h1>
           <p className="mt-2 text-sm text-stone-600">
-            Weekboodschappen: vink aan wat je al in huis hebt. Deze lijst wordt telkens
-            herbouwd uit{" "}
-            <strong className="font-medium text-stone-700">alle gerechten</strong> in je
-            weekplan, waarbij per maaltijd de hoeveelheden meetellen volgens wat je op de
-            receptpagina hebt ingesteld (<strong className="font-medium text-stone-700">
-              opgeslagen x1–x8
-            </strong>
-            ; waar je niets aanpast geldt automatisch ×1). Onder «Altijd op voorraad» staat
-            je basisvoorraad-checklist. Zonder gekozen plan zie je de lijst van je meest
-            recente weekplan; vanaf de weekpagina kun je een specifiek plan openen.
+            <strong>Voor lunches, ontbijt & snacks</strong> (jij alleen) en{" "}
+            <strong>voor diners</strong> (gezin). Basisartikelen uit «altijd op voorraad»
+            staan onderaan de eerste lijst, met dezelfde «In voorraad»-vinkjes. Boven het
+            diner-blok stel je in voor hoeveel personen je het diner kookt. Zonder gekozen
+            plan zie je het meest recente weekplan; vanaf de weekpagina kun je een specifiek
+            plan openen.
           </p>
 
           {!row ? (
@@ -101,9 +111,12 @@ export default async function BoodschappenPage(props: {
           ) : (
             <div className="mt-8">
               <BoodschappenClient
+                mealPlanId={row.meal_plan_id}
                 shoppingListId={row.id}
-                weeklyCategories={weeklyCategories}
-                pantry={pantry}
+                lunchesCategories={lunches}
+                dinersCategories={dinners}
+                pantryIntro={pantryIntro}
+                initialDinerHouseholdSize={householdSize}
               />
             </div>
           )}

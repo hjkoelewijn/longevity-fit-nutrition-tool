@@ -137,7 +137,7 @@ export default async function RecipeDetailPage(props: {
 
         {kidTip ? (
           <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
-            <h2 className="text-sm font-semibold text-amber-950">Kindertip</h2>
+            <h2 className="text-sm font-semibold text-amber-950">Tip voor (oudere) kids</h2>
             <p className="mt-2 text-sm text-amber-950">{kidTip}</p>
           </section>
         ) : null}

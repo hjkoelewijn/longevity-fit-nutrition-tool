@@ -296,11 +296,36 @@ export function validateWeekPlanPayload(
     }
   }
 
-  if (!payload.shopping_list?.categories?.length) {
+  const sl = payload.shopping_list as
+    | {
+        lunches_breakfast_snacks?: { categories?: unknown[] };
+        dinners?: { categories?: unknown[] };
+        categories?: unknown[];
+      }
+    | undefined;
+  const lunchesCount = Array.isArray(sl?.lunches_breakfast_snacks?.categories)
+    ? (sl!.lunches_breakfast_snacks!.categories as unknown[]).length
+    : 0;
+  const dinnersCount = Array.isArray(sl?.dinners?.categories)
+    ? (sl!.dinners!.categories as unknown[]).length
+    : 0;
+  const legacyCount = Array.isArray(sl?.categories)
+    ? (sl!.categories as unknown[]).length
+    : 0;
+  if (lunchesCount + dinnersCount + legacyCount === 0) {
     return {
       ok: false,
       code: "shopping",
-      message: "Boodschappenlijst ontbreekt of is leeg.",
+      message:
+        "Boodschappenlijst ontbreekt of is leeg. Lever shopping_list.lunches_breakfast_snacks en shopping_list.dinners aan.",
+    };
+  }
+  if (legacyCount > 0 && lunchesCount === 0 && dinnersCount === 0) {
+    return {
+      ok: false,
+      code: "shopping_split",
+      message:
+        "Boodschappenlijst moet gesplitst worden in shopping_list.lunches_breakfast_snacks en shopping_list.dinners (niet één platte lijst onder shopping_list.categories).",
     };
   }
 

@@ -3,11 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import type { MealPlanUserMeta } from "@/lib/weekplan/types";
-import { rebuildAndPersistWeeklyShopping } from "@/lib/weekplan/rebuild-weekly-shopping";
-import { setWeeklyItemPantry } from "@/lib/weekplan/shopping-storage";
+import {
+  setWeeklyItemPantry,
+  type ShoppingSection,
+} from "@/lib/weekplan/shopping-storage";
 
 export async function toggleShoppingPantryAction(input: {
   shoppingListId: string;
+  section: ShoppingSection;
   categoryId: string;
   itemId: string;
   inPantry: boolean;
@@ -32,6 +35,7 @@ export async function toggleShoppingPantryAction(input: {
 
   const next = setWeeklyItemPantry(
     row.payload,
+    input.section,
     input.categoryId,
     input.itemId,
     input.inPantry,
@@ -103,10 +107,10 @@ export async function toggleMealDoneAction(input: {
   return { ok: true as const };
 }
 
-export async function setRecipePortionMultiplierAction(input: {
+/** Aantal personen voor het diner-blok op de boodschappenpagina (1–8). */
+export async function setDinerHouseholdSizeAction(input: {
   mealPlanId: string;
-  mealId: string;
-  multiplier: number;
+  size: number;
 }) {
   const supabase = await createClient();
   const {
@@ -116,8 +120,8 @@ export async function setRecipePortionMultiplierAction(input: {
     return { ok: false as const, error: "Niet ingelogd." };
   }
 
-  const m = Math.floor(Number(input.multiplier));
-  const mult = Number.isFinite(m) ? Math.min(8, Math.max(1, m)) : 1;
+  const n = Math.floor(Number(input.size));
+  const size = Number.isFinite(n) ? Math.min(8, Math.max(1, n)) : 1;
 
   const { data: plan, error: fetchErr } = await supabase
     .from("meal_plans")
@@ -130,14 +134,13 @@ export async function setRecipePortionMultiplierAction(input: {
   }
 
   const meta = (plan.user_meta ?? {}) as MealPlanUserMeta;
-  const nextMultipliers = { ...(meta.recipePortionMultipliers ?? {}), [input.mealId]: mult };
 
   const { error: upErr } = await supabase
     .from("meal_plans")
     .update({
       user_meta: {
         ...meta,
-        recipePortionMultipliers: nextMultipliers,
+        dinerHouseholdSize: size,
       } as unknown as Record<string, unknown>,
     })
     .eq("id", input.mealPlanId);
@@ -146,14 +149,6 @@ export async function setRecipePortionMultiplierAction(input: {
     return { ok: false as const, error: upErr.message };
   }
 
-  const rb = await rebuildAndPersistWeeklyShopping(supabase, input.mealPlanId);
-  if (!rb.ok) {
-    return { ok: false as const, error: rb.error };
-  }
-
-  revalidatePath("/weekplan");
   revalidatePath("/weekplan/boodschappen");
-  revalidatePath(`/weekplan/recept/${encodeURIComponent(input.mealId)}`);
-
   return { ok: true as const };
 }

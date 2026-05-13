@@ -38,14 +38,21 @@ Het antwoord moet EXACT één JSON-object zijn (geen markdown, geen uitleg erna)
     }
   ],
   "shopping_list": {
-    "categories": [
-      { "id": "groenten", "label": "Groenten & fruit", "items": [ { "id": "...", "name": "...", "quantity": "..." } ] }
-    ]
+    "lunches_breakfast_snacks": {
+      "categories": [
+        { "id": "groenten", "label": "Groenten & fruit", "items": [ { "id": "...", "name": "...", "quantity": "..." } ] }
+      ]
+    },
+    "dinners": {
+      "categories": [
+        { "id": "eiwit", "label": "Eiwit (vlees · vis · veggie)", "items": [ { "id": "...", "name": "...", "quantity": "..." } ] }
+      ]
+    }
   },
   "always_in_stock": {
     "intro": "Korte uitleg: eenmalige investering in basisvoorraad zodat je daarna snel voedzame maaltijden kunt maken (geen schuldgevoel als iets nog ontbreekt).",
     "categories": [
-      { "id": "oliën", "label": "Oliën & azijn", "items": [ { "id": "...", "name": "...", "quantity": "..." } ] }
+      { "id": "oliën", "label": "Oliën & azijn", "items": [ { "id": "...", "name": "..." } ] }
     ]
   }
 }
@@ -169,15 +176,38 @@ Taken:
 - Controleer vóór afronden: voor elke dag (1–7) expliciet de carb-telling (light+primary) ≤ 2.
 - Respecteer allergieën en intoleranties strikt in ingrediënten en bereiding.
 - Geen medische claims; geen calorie-doelen.
-- **shopping_list:** weekinkoop, logisch gegroepeerd (groenten, eiwitten, vetten, zuivel/plantaardig, droge voeding, kruiden, overig).
-- **always_in_stock:** aparte lijst “altijd op voorraad” — dingen die je (eenmalig) goed op voorraad hebt om **snel** een voedzame maaltijd te kunnen maken (oliën, azijn, basis specerijen, voorraadpotjes, diepvriesbasis, etc.). Korte **intro** waarin duidelijk is dat dit een **investering** is die drukke dagen lichter maakt; geen perfectionisme.
+- **shopping_list (verplicht gesplitst in twee blokken):**
+  - **shopping_list.lunches_breakfast_snacks**: weekinkoop voor **1 persoon (de gebruiker zelf)** voor de hele week — 7 ontbijten + 7 lunches + eventuele tussendoortjes samen. Logisch gegroepeerd (groenten, eiwitten, vetten, zuivel/plantaardig, droge voeding, kruiden, overig).
+  - **shopping_list.dinners**: weekinkoop voor **alle 7 diners samen, voor 1 portie per diner (= 1 persoon)**. De gebruiker stelt zelf in de app in voor hoeveel personen die het diner kookt; de app vermenigvuldigt jouw hoeveelheden met dat aantal. **Jij hoeft geen gezinshoeveelheden te leveren in dit blok.** Logisch gegroepeerd, zelfde stijl als hierboven.
+  - Producten die zowel voor lunches als diners gelden (bv. olijfolie, knoflook, ui) zet je **in dat blok waar het grootste deel van de behoefte zit** — geen dubbele regels.
+  - Hoeveelheden altijd met duidelijke eenheid (g, ml, el, tl, stuk/stuks). **Schrijf nooit “zie recept” of “hoeveelheid volgt”** als hoeveelheid; vul een realistische schatting in.
+- **always_in_stock:** aparte lijst “altijd op voorraad” — dingen die je (eenmalig) goed op voorraad hebt om **snel** een voedzame maaltijd te kunnen maken (oliën, azijn, basis specerijen, voorraadpotjes, diepvriesbasis, etc.). Korte **intro** waarin duidelijk is dat dit een **investering** is die drukke dagen lichter maakt; geen perfectionisme. **Voor «altijd op voorraad»-items zijn hoeveelheden niet nodig** (de gebruiker beheert dit zelf); je mag het "quantity"-veld weglaten of leeg laten.
 - **prep_minutes** per gerecht: sluit aan bij **raw_profile.cooking_time_weekday** en **raw_profile.cooking_time_weekend** (beschikbare kooktijd). Meer tijd in het profiel → recepten mogen iets uitgebreider; weinig tijd → maximaal efficiënt en stressvrij, zonder “tekort”-gevoel.
-- Ingrediënten: gebruik altijd duidelijke hoeveelheden mét eenheid (bijv. g, ml, el, tl, stuk/stuks). Vermijd kale getallen zonder eenheid.
+- **Ingrediënt-hoeveelheden: ALTIJD een expliciete keuken-eenheid achter het getal.** Een kaal getal zonder eenheid (bijv. "amount":"2") is FOUT en wordt afgekeurd. Kies de juiste eenheid per ingrediënt:
+  • knoflook → "teen" (bijv. "1 teen")
+  • citroen / limoen / sinaasappel → "stuk" (of "1/2 stuk")
+  • ui / sjalot / paprika / wortel / courgette / ei / appel / avocado → "stuk"
+  • olijfolie / boter / azijn / sojasaus / honing / tomatenpuree / mosterd / pesto → "el" of "tl"
+  • kruiden & specerijen (peper, zout, paprikapoeder, kaneel, kerrie, tijm, oregano, kurkuma) → "tl" of "snufje"
+  • bouillon / melk / room / water / vruchtensap / kookvocht → "ml"
+  • rijst / pasta / havermout / linzen / kipfilet / vis / vlees / groente per gewicht / kaas per gewicht → "g"
+  • bos peterselie / koriander / basilicum → "bos" of "el (gehakt)"
+  Schrijf "naar smaak" alleen voor zout/peper/specerijen die je echt op gevoel doseert.
 - Porties: gebruik voor **alle maaltijden** servings = 1 als basisportie (ontbijt, lunch, diner en tussendoortjes).
 
 ${ONE_PORTION_AMOUNT_GUIDELINES_PROMPT}
 - Intuïtief eten: behandel porties als **richtlijn**, niet als dwang. Op actievere dagen of bij meer trek mag iemand opschalen; bij minder trek mag het omlaag. Geef in toon en opbouw ruimte voor honger/verzadiging.
 - Praktische bordvolgorde volgens Longevity Fit: start met groente + eiwit, daarna vetten, daarna (waar passend) koolhydraten.
+
+kid_tip — voor het gezin van een 40+ vrouw, vaak met tieners (≈ 12–18 jaar):
+- Doelgroep van de tip is **tieners en oudere kids**, niet peuters/kleuters. Géén babytaal, géén "leg apart als knapperige snack", géén smiley-vormen van groente, géén beschermend toontje.
+- Zinvolle richtingen voor kid_tip (kies er hooguit één per recept):
+  • **Vullende variant** voor groei/sport: een handje noten, een extra ei, grotere portie van de koolhydraatbron erbij.
+  • **Eenvoudige swap** voor een ingrediënt dat tieners vaak minder snel lusten: bv. spinazie → ijsbergsla, blauwe kaas → mozzarella, vis → kip — zonder dat het karakter van de maaltijd verdwijnt.
+  • **Pittigheid/bitterheid temperen** voor wie dat liever heeft (citroen er los bij, mildere mosterd, minder paprikapoeder) zonder dat het slap wordt.
+  • **'Help-mee'-aanwijzing** waarmee de tiener een deel van het werk zelf doet (saus mengen, marinade kloppen, groente schillen).
+  • **Portieschaaltip**: bv. "voor een hongerige tiener ½ tot 1 portie extra van de koolhydraatbron".
+- Als er geen logische tienertip is: zet kid_tip op null. **Niet forceren.**
 
 Kooksessies (cook_sessions_per_week = ${bundle.cookSessionsPerWeek}):
 - Dit is het aantal keer per week dat iemand bewust kookt (warm/groter bereiden, batch), niet “elke maaltijd vers”.

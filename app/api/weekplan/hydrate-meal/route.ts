@@ -8,7 +8,6 @@ import {
 } from "@/lib/weekplan/portion-amount-guidelines";
 import type { WeekPlanMeal, WeekPlanPayload } from "@/lib/weekplan/types";
 import { createClient } from "@/utils/supabase/server";
-import { rebuildAndPersistWeeklyShopping } from "@/lib/weekplan/rebuild-weekly-shopping";
 
 export const maxDuration = 180;
 
@@ -41,17 +40,19 @@ function hasDetails(meal: WeekPlanMeal): boolean {
 }
 
 function normalizeAmountText(amount: string): string {
-  const raw = amount.trim();
-  if (!raw) return "";
-  if (/^\d+([.,]\d+)?$/.test(raw)) return `${raw} g`;
-  return raw;
+  return amount.trim();
 }
 
 function hasValidUnit(amount: string): boolean {
   const raw = amount.trim().toLowerCase();
   if (!raw) return false;
   if (raw === "naar smaak") return true;
-  return /(g|gram|kg|ml|l|tl|theelepel|el|eetlepel|stuk|stuks|teen|snufje)/.test(raw);
+  // Kale getallen (geen eenheid) zijn niet acceptabel — die werden vroeger
+  // automatisch als "g" geïnterpreteerd; nu eisen we een expliciete eenheid.
+  if (/^\d+([.,]\d+)?$/.test(raw)) return false;
+  return /(g|gram|kg|ml|l|tl|theelepel|el|eetlepel|stuk|stuks|teen|snufje|bol|plak|bos|scheut)/.test(
+    raw,
+  );
 }
 
 function escapeRegex(input: string): string {
@@ -226,12 +227,28 @@ Geef EXACT één JSON-object terug in dit schema:
 Regels:
 - Nederlands.
 - 6-14 ingrediënten, met concrete hoeveelheden.
-- Elk ingrediënt MOET een hoeveelheid + eenheid hebben (bijv. "150 g", "2 stuks", "1 el", "200 ml", "1 tl").
+- **Elk ingrediënt MOET een hoeveelheid + expliciete keuken-eenheid hebben.** Een kaal getal zonder eenheid (bijv. "amount":"2") is FOUT en wordt afgekeurd. Schrijf altijd de eenheid uit.
+- **Kies de juiste eenheid per ingrediënt** — niet alles is gram:
+  • knoflook → "teen" (bijv. "1 teen")
+  • citroen / limoen / sinaasappel → "stuk" (of "1/2 stuk" voor halve)
+  • ui / sjalot / paprika / wortel / courgette / ei / appel → "stuk"
+  • olijfolie / boter / azijn / sojasaus / honing / tomatenpuree / mosterd / yoghurt-dressing → "el" of "tl"
+  • kruiden (peper, zout, paprikapoeder, kaneel, kerrie, tijm, oregano) → "tl" of "snufje"
+  • bouillon / melk / room / water / sap → "ml"
+  • rijst / pasta / havermout / linzen / kipfilet / vis / vlees / groente per gewicht → "g"
+  • bos peterselie / koriander → "bos" of "el (gehakt)"
 - 3-7 korte bereidingsstappen.
 - Houd rekening met profielcontext en maaltijdslot.
 - Ingrediëntenlijst en bereidingsstappen moeten qua hoeveelheden consistent zijn.
 - Alle hoeveelheden zijn voor **1 portie** (gebruikers schalen in de app); geen gezinshoeveelheden in dit recept.
 ${ONE_PORTION_AMOUNT_GUIDELINES_PROMPT}
+- **kid_tip** is bedoeld voor het gezin van een 40+ vrouw, vaak met **tieners (≈ 12–18 jaar)** — niet voor peuters/kleuters. Géén babytaal, géén "leg apart als knapperige snack", géén smiley-vormen, géén beschermend toontje. Kies hooguit één van deze richtingen, en alleen als hij echt past:
+  • vullende variant voor groei/sport (handje noten, extra ei, grotere portie koolhydraatbron);
+  • simpele swap voor een ingrediënt dat tieners minder snel lusten (bv. spinazie → ijsbergsla, blauwe kaas → mozzarella, vis → kip);
+  • pittigheid/bitterheid temperen (citroen los erbij, mildere mosterd, minder paprikapoeder) zonder dat het slap wordt;
+  • 'help-mee'-aanwijzing waarmee de tiener een deel van het werk zelf doet;
+  • portieschaaltip voor een hongerige tiener.
+  Past geen enkele tip natuurlijk? Zet kid_tip op null. **Niet forceren.**
 - Geen markdown, geen extra tekst.
 
 Profielcontext:
@@ -256,7 +273,7 @@ ${JSON.stringify(meal)}
                 lastFailedPlausibility
                   ? `${PORTION_PLAUSIBILITY_RETRY_HINT}\n`
                   : ""
-              }Je vorige output miste valide eenheden of was inconsistent met de stappen — of de grammen klopten niet voor exact **1 portie**. Genereer opnieuw met realistische hoeveelheden en duidelijke keuken-eenheden per ingrediënt.`;
+              }Je vorige output miste expliciete keuken-eenheden of had een kaal getal zonder eenheid — of de hoeveelheden klopten niet voor exact **1 portie**. Genereer opnieuw met de juiste eenheid per ingrediënt: knoflook in "teen", citroen/ui/ei/paprika in "stuk", olijfolie/boter/azijn in "el" of "tl", kruiden in "tl"/"snufje", bouillon/melk in "ml", rijst/pasta/vlees/vis/groente in "g". Geen kale getallen.`;
 
       const message = await anthropic.messages.create({
         model,
@@ -352,11 +369,6 @@ ${JSON.stringify(meal)}
       .eq("id", mealPlanId);
     if (upErr) {
       return NextResponse.json({ error: upErr.message }, { status: 500 });
-    }
-
-    const rb = await rebuildAndPersistWeeklyShopping(supabase, mealPlanId);
-    if (!rb.ok) {
-      return NextResponse.json({ error: rb.error }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true, quality_mode: qualityMode });

@@ -5,31 +5,11 @@ import { loadLongevitySystemPrompt } from "@/lib/weekplan/load-system-prompt";
 import { parseJsonFromClaudeText } from "@/lib/weekplan/parse-ai-json";
 import type { WeekPlanPayload } from "@/lib/weekplan/types";
 import { validateWeekPlanPayload } from "@/lib/weekplan/validate-ai-output";
-import { rebuildAndPersistWeeklyShopping } from "@/lib/weekplan/rebuild-weekly-shopping";
+import { buildShoppingListInsertPayload } from "@/lib/weekplan/shopping-storage";
 
 export const maxDuration = 300;
 
 type Body = { meal_plan_id?: string };
-
-function normalizeIngredientAmounts(payload: WeekPlanPayload) {
-  for (const day of payload.days) {
-    const meals = [
-      day.meals.ontbijt,
-      day.meals.lunch,
-      day.meals.diner,
-      ...(day.tussendoortjes ?? []),
-    ];
-    for (const meal of meals) {
-      for (const ing of meal.ingredients ?? []) {
-        const raw = String(ing.amount ?? "").trim();
-        if (!raw) continue;
-        if (/^\d+([.,]\d+)?$/.test(raw)) {
-          ing.amount = `${raw} g`;
-        }
-      }
-    }
-  }
-}
 
 export async function POST(request: Request) {
   try {
@@ -91,6 +71,7 @@ Belangrijk:
 - Breid bereiding uit naar 3-6 duidelijke stappen per maaltijd.
 - Behoud shopping_list en always_in_stock, maar verbeter waar nodig op consistentie.
 - Porties: zet voor alle maaltijden servings = 1 als basisportie. Pas ingrediënt-hoeveelheden aan zodat alles consistent blijft met 1 portie.
+- **Ingrediënt-hoeveelheden: ALTIJD een expliciete keuken-eenheid achter het getal.** Een kaal getal zonder eenheid (bijv. "amount":"2") is FOUT en wordt afgekeurd. Per ingrediënttype: knoflook → "teen", citroen/ui/ei/paprika/wortel → "stuk", olijfolie/boter/azijn/sojasaus → "el" of "tl", kruiden (peper/zout/paprikapoeder) → "tl" of "snufje", bouillon/melk/sap → "ml", rijst/pasta/havermout/vlees/vis/groente per gewicht → "g". Gebruik "naar smaak" alleen voor zout/peper/specerijen op gevoel.
 - Geen markdown, geen extra tekst.
 
 Actueel profiel (JSON) voor context:
@@ -146,7 +127,6 @@ ${JSON.stringify(payload)}
         snack.servings = 1;
       }
     }
-    normalizeIngredientAmounts(nextPayload);
 
     const { error: planUpErr } = await supabase
       .from("meal_plans")
@@ -163,9 +143,20 @@ ${JSON.stringify(payload)}
       return NextResponse.json({ error: planUpErr.message }, { status: 500 });
     }
 
-    const rb = await rebuildAndPersistWeeklyShopping(supabase, mealPlanId);
-    if (!rb.ok) {
-      return NextResponse.json({ error: rb.error }, { status: 500 });
+    const shoppingPayload = buildShoppingListInsertPayload(nextPayload);
+    const { data: shopRow } = await supabase
+      .from("shopping_lists")
+      .select("id")
+      .eq("meal_plan_id", mealPlanId)
+      .maybeSingle();
+    if (shopRow?.id) {
+      const { error: shopUpErr } = await supabase
+        .from("shopping_lists")
+        .update({ payload: shoppingPayload as unknown as Record<string, unknown> })
+        .eq("id", shopRow.id);
+      if (shopUpErr) {
+        return NextResponse.json({ error: shopUpErr.message }, { status: 500 });
+      }
     }
 
     return NextResponse.json({ ok: true });

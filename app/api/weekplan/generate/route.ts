@@ -10,7 +10,7 @@ import {
   pantryStaplesAsPseudoMeals,
   uniqueDinnerTitles,
 } from "@/lib/weekplan/meals-helpers";
-import { weekShoppingPayloadForInsert } from "@/lib/weekplan/rebuild-weekly-shopping";
+import { buildShoppingListInsertPayload } from "@/lib/weekplan/shopping-storage";
 import {
   checkAllergiesInMeals,
   checkDigestiveGuardrails,
@@ -26,26 +26,6 @@ type Body = {
   snacks_enabled?: boolean;
   quality_mode?: boolean;
 };
-
-function normalizeIngredientAmounts(payload: WeekPlanPayload) {
-  for (const day of payload.days) {
-    const meals = [
-      day.meals.ontbijt,
-      day.meals.lunch,
-      day.meals.diner,
-      ...(day.tussendoortjes ?? []),
-    ];
-    for (const meal of meals) {
-      for (const ing of meal.ingredients ?? []) {
-        const raw = String(ing.amount ?? "").trim();
-        if (!raw) continue;
-        if (/^\d+([.,]\d+)?$/.test(raw)) {
-          ing.amount = `${raw} g`;
-        }
-      }
-    }
-  }
-}
 
 function nextMondayIso(): string {
   const d = new Date();
@@ -409,7 +389,6 @@ export async function POST(request: Request) {
         }
       }
     }
-    normalizeIngredientAmounts(payload);
     const allergies = Array.isArray(profile.allergies)
       ? (profile.allergies as unknown[]).filter(
           (a): a is string => typeof a === "string",
@@ -464,6 +443,7 @@ export async function POST(request: Request) {
           completedMealIds: [],
           hydrationStatus: "hydrating",
           hydrationError: null,
+          dinerHouseholdSize: 1,
         },
       })
       .select("id")
@@ -476,7 +456,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const shoppingPayload = weekShoppingPayloadForInsert(payload);
+    const shoppingPayload = buildShoppingListInsertPayload(payload);
 
     const { error: shopErr } = await supabase.from("shopping_lists").insert({
       user_id: user.id,

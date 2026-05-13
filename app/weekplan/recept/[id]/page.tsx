@@ -5,11 +5,26 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import type { MealPlanUserMeta, WeekPlanPayload } from "@/lib/weekplan/types";
 import { carbProfileNl } from "@/lib/weekplan/carb-labels";
-import { scaleAmountText } from "@/lib/weekplan/amount-scale";
 import { findMealById } from "@/lib/weekplan/meals-helpers";
+
+function nextDayLunchUsesLeftovers(
+  payload: WeekPlanPayload,
+  dayIndex: number,
+): boolean {
+  if (dayIndex < 0 || dayIndex >= payload.days.length - 1) return false;
+  const lunch = payload.days[dayIndex + 1]?.meals?.lunch;
+  if (!lunch) return false;
+  const title = String(lunch.title ?? "").toLowerCase();
+  return (
+    lunch.repeat_for_leftovers === true ||
+    title.includes("restjes") ||
+    title.includes("leftover")
+  );
+}
 import { signOutAction } from "../../../dashboard/actions";
 import RecipeHydrationTrigger from "./recipe-hydration-trigger";
-import { PortionScaleControls } from "./portion-scale-controls";
+import { DinerIngredientsTable } from "./diner-ingredients-table";
+import { RefreshRecipeButton } from "./refresh-recipe-button";
 
 export const dynamic = "force-dynamic";
 
@@ -19,22 +34,6 @@ const slotNl: Record<string, string> = {
   diner: "Diner",
   tussendoortje: "Tussendoortje",
 };
-
-function servingsLabel(slot: string, servings: number): string {
-  return servings === 1 ? `1 portie (${slotNl[slot] ?? slot})` : `${servings} porties`;
-}
-
-function formatAmountWithIngredient(amount: string, scaleFactor: number): string {
-  const raw = amount.trim();
-  if (!raw) return "hoeveelheid volgt";
-  return scaleAmountText(raw, scaleFactor);
-}
-
-
-function lunchUsesLeftoversTitle(title: string): boolean {
-  const t = title.toLowerCase();
-  return t.includes("restjes") || t.includes("leftover");
-}
 
 function hasMissingIngredientAmounts(
   ingredients: Array<{ amount?: string | null }> | undefined,
@@ -86,11 +85,12 @@ export default async function WeekplanReceptPage(props: {
     notFound();
   }
   const meta = (plan.user_meta ?? {}) as MealPlanUserMeta;
-  const rawMult = meta.recipePortionMultipliers?.[meal.id];
-  const scaleFactor =
-    typeof rawMult === "number" && Number.isFinite(rawMult)
-      ? Math.min(8, Math.max(1, Math.floor(rawMult)))
+  const rawDinerSize = meta.dinerHouseholdSize;
+  const dinerHouseholdSize =
+    typeof rawDinerSize === "number" && Number.isFinite(rawDinerSize)
+      ? Math.min(8, Math.max(1, Math.floor(rawDinerSize)))
       : 1;
+  const isDiner = meal.slot === "diner";
   const ingredients = Array.isArray(meal.ingredients) ? meal.ingredients : [];
   const steps = Array.isArray(meal.steps) ? meal.steps : [];
   const needsHydration =
@@ -101,11 +101,7 @@ export default async function WeekplanReceptPage(props: {
     ),
   );
   const hasLeftoverLunchTomorrow =
-    meal.slot === "diner" &&
-    dayIndex >= 0 &&
-    dayIndex < payload.days.length - 1 &&
-    (payload.days[dayIndex + 1].meals.lunch.repeat_for_leftovers === true ||
-      lunchUsesLeftoversTitle(payload.days[dayIndex + 1].meals.lunch.title));
+    meal.slot === "diner" && dayIndex >= 0 && nextDayLunchUsesLeftovers(payload, dayIndex);
 
   return (
     <main className="min-h-screen bg-stone-50 px-6 py-16">
@@ -136,31 +132,43 @@ export default async function WeekplanReceptPage(props: {
             Binnen onze richtlijnen
           </Link>
           <p className="mt-2 text-sm text-stone-600">
-            {meal.prep_minutes} min · {servingsLabel(meal.slot, scaleFactor)} · koolhydraatmoment:{" "}
-            {carbProfileNl(meal.carb_profile)}
+            {meal.prep_minutes} min · 1 portie ({slotNl[meal.slot] ?? meal.slot}) ·
+            koolhydraatmoment: {carbProfileNl(meal.carb_profile)}
           </p>
-          <PortionScaleControls
-            mealPlanId={mp}
-            mealId={meal.id}
-            portionMultiplier={scaleFactor}
-          />
-          <p className="mt-2 text-xs text-stone-500">
-            Intuïtief eten: zie porties als richtlijn. Luister naar trek/verzadiging
-            (actieve dag = vaak meer trek). Begin op je bord met groente + eiwit,
-            daarna vetten, daarna koolhydraten.
-          </p>
+          {isDiner ? (
+            <p className="mt-2 text-xs text-stone-500">
+              Basis is <strong>1 portie per persoon</strong>. Kies bij de ingrediënten
+              hieronder voor hoeveel personen je kookt — de hoeveelheden schalen direct
+              mee. De{" "}
+              <Link
+                href={`/weekplan/boodschappen?mp=${mp}`}
+                className="font-medium underline underline-offset-4"
+              >
+                boodschappenlijst
+              </Link>{" "}
+              heeft een eigen selector voor het diner-blok (instelling voor de hele
+              week).
+            </p>
+          ) : (
+            <p className="mt-2 text-xs text-stone-500">
+              Hoeveelheden zijn voor <strong>1 portie</strong> (jij). Intuïtief eten: zie
+              porties als richtlijn. Begin op je bord met groente + eiwit, daarna vetten,
+              daarna koolhydraten.
+            </p>
+          )}
           {meal.kid_tip ? (
             <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-              <span className="font-medium">Tip voor kinderen:</span>{" "}
+              <span className="font-medium">Tip voor (oudere) kids:</span>{" "}
               {meal.kid_tip}
             </p>
           ) : null}
           {hasLeftoverLunchTomorrow ? (
             <p className="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-              <span className="font-medium">Restjes-tip:</span> houd je het weekplan aan en
-              eet je dit morgen als lunch, maak dan ongeveer{" "}
-              <strong>150 g groente + 75 g eiwit + 50 g koolhydraatbron</strong> extra
-              voor 1 extra lunchportie.
+              <span className="font-medium">Restjes-tip:</span> wil je de lunch van morgen
+              met restjes aanvullen met verse groente e.d., reken dan{" "}
+              <strong>buiten de ingrediënten van dit diner</strong> ongeveer{" "}
+              <strong>150 g groente + 75 g eiwit + 50 g koolhydraatbron</strong> extra per
+              zo’n lunch (niet in de ingrediënten van dit diner).
             </p>
           ) : null}
           <RecipeHydrationTrigger mealPlanId={mp} mealId={meal.id} enabled={needsHydration} />
@@ -168,25 +176,39 @@ export default async function WeekplanReceptPage(props: {
           <section className="mt-8">
             <h2 className="text-lg font-semibold text-stone-900">Ingrediënten</h2>
             {ingredients.length > 0 ? (
-              <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-stone-800">
-                {ingredients.map((ing, i) => (
-                  <li key={i}>
-                    <span className="font-medium">{String(ing.name ?? "Ingrediënt")}</span>{" "}
-                    <span className="text-stone-600">
-                      {formatAmountWithIngredient(String(ing.amount ?? ""), scaleFactor)}
-                    </span>
-                    {ing.note ? (
-                      <span className="text-stone-500"> ({String(ing.note)})</span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
+              isDiner ? (
+                <DinerIngredientsTable
+                  ingredients={ingredients}
+                  initialMultiplier={dinerHouseholdSize}
+                />
+              ) : (
+                <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-stone-800">
+                  {ingredients.map((ing, i) => {
+                    const raw = String(ing.amount ?? "").trim();
+                    return (
+                      <li key={i}>
+                        <span className="font-medium">
+                          {String(ing.name ?? "Ingrediënt")}
+                        </span>{" "}
+                        <span className="text-stone-600">
+                          {raw || "hoeveelheid volgt"}
+                        </span>
+                        {ing.note ? (
+                          <span className="text-stone-500"> ({String(ing.note)})</span>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )
             ) : (
               <p className="mt-3 text-sm text-stone-600">
                 Ingrediënten worden nog aangevuld. Ververs deze pagina over 1-2 minuten.
               </p>
             )}
           </section>
+
+          <RefreshRecipeButton mealPlanId={mp} mealId={meal.id} />
 
           <section className="mt-8">
             <h2 className="text-lg font-semibold text-stone-900">Bereiding</h2>

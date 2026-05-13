@@ -61,8 +61,19 @@ export type WeekPlanPayload = {
   locale?: string;
   generation_notes?: string;
   days: WeekPlanDay[];
+  /**
+   * Weekboodschappen, gesplitst:
+   * - `lunches_breakfast_snacks`: totaal voor 1 persoon (jij) voor de hele week (7 ontbijten,
+   *   7 lunches en eventueel tussendoortjes). Schaalt niet op de UI.
+   * - `dinners`: totaal voor 1 dinerportie over de week (1× per persoon per diner).
+   *   Op de boodschappenpagina kun je dit blok vermenigvuldigen met "diner voor … personen".
+   * - `categories`: legacy/oudere plannen — één flatte lijst zonder splitsing.
+   */
   shopping_list: {
-    categories: ShoppingCategory[];
+    lunches_breakfast_snacks?: { categories: ShoppingCategory[] };
+    dinners?: { categories: ShoppingCategory[] };
+    /** @deprecated alleen voor oudere weekplannen. */
+    categories?: ShoppingCategory[];
   };
   /** Basis op voorraad (investering); naast week-boodschappen. */
   always_in_stock: AlwaysInStockBlock;
@@ -74,6 +85,8 @@ export type MealPlanUserMeta = {
   hydrationError?: string;
   /** mealId -> vervangen recept-snapshot (optioneel) */
   replacements?: Record<string, WeekPlanMeal>;
-  /** mealId -> 1–8; weekboodschappen worden hiermee herberekend uit de maaltijden */
+  /** mealId -> 1–8; alleen voor de ingrediënten-weergave op de receptpagina (geen effect op weekboodschappen). */
   recipePortionMultipliers?: Record<string, number>;
+  /** Aantal personen waarvoor het diner-blok op de boodschappenpagina vermenigvuldigd wordt (default 1). */
+  dinerHouseholdSize?: number;
 };
