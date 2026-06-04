@@ -7,6 +7,7 @@ import {
   dinnersFromStoredPayload,
   lunchesFromStoredPayload,
   pantryFromStoredPayload,
+  splitLunchesAndPantry,
 } from "@/lib/weekplan/shopping-storage";
 import { BoodschappenClient } from "./boodschappen-client";
 import { signOutAction } from "../../dashboard/actions";
@@ -52,7 +53,8 @@ export default async function BoodschappenPage(props: {
     );
   }
 
-  const lunches = row ? lunchesFromStoredPayload(row.payload) : [];
+  const allLunches = row ? lunchesFromStoredPayload(row.payload) : [];
+  const { lunches, pantry: pantryCategories } = splitLunchesAndPantry(allLunches);
   const dinners = row ? dinnersFromStoredPayload(row.payload) : [];
   const pantryIntro = row ? pantryFromStoredPayload(row.payload).intro : null;
 
@@ -90,11 +92,10 @@ export default async function BoodschappenPage(props: {
           </h1>
           <p className="mt-2 text-sm text-stone-600">
             <strong>Voor lunches, ontbijt & snacks</strong> (jij alleen) en{" "}
-            <strong>voor diners</strong> (gezin). Basisartikelen uit «altijd op voorraad»
-            staan onderaan de eerste lijst, met dezelfde «In voorraad»-vinkjes. Boven het
-            diner-blok stel je in voor hoeveel personen je het diner kookt. Zonder gekozen
-            plan zie je het meest recente weekplan; vanaf de weekpagina kun je een specifiek
-            plan openen.
+            <strong>voor diners</strong> (gezin). Onderaan staat «altijd op voorraad»: je
+            basisvoorraad met dezelfde «In voorraad»-vinkjes. Boven het diner-blok stel je
+            in voor hoeveel personen je het diner kookt. Zonder gekozen plan zie je het
+            meest recente weekplan; vanaf de weekpagina kun je een specifiek plan openen.
           </p>
 
           {!row ? (
@@ -115,6 +116,7 @@ export default async function BoodschappenPage(props: {
                 shoppingListId={row.id}
                 lunchesCategories={lunches}
                 dinersCategories={dinners}
+                pantryCategories={pantryCategories}
                 pantryIntro={pantryIntro}
                 initialDinerHouseholdSize={householdSize}
               />

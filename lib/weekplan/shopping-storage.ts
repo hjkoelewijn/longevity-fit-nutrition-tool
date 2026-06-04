@@ -66,6 +66,28 @@ function lunchesHaveMergedBasis(categories: ShoppingCategory[]): boolean {
   return categories.some((c) => c.id.startsWith(BASIS_CAT));
 }
 
+/**
+ * Splitst een (samengevoegde) lunch-lijst in de échte lunch/ontbijt/snack-categorieën
+ * en de basisvoorraad-categorieën («altijd op voorraad», met `basis::`-id’s). Zo kan de
+ * basisvoorraad weer als aparte sectie getoond worden, terwijl de opslag en de
+ * «In voorraad»-toggle (sectie "lunches") onveranderd blijven werken.
+ */
+export function splitLunchesAndPantry(categories: ShoppingCategory[]): {
+  lunches: ShoppingCategory[];
+  pantry: ShoppingCategory[];
+} {
+  const lunches: ShoppingCategory[] = [];
+  const pantry: ShoppingCategory[] = [];
+  for (const c of categories) {
+    if (c.id.startsWith(BASIS_CAT)) {
+      pantry.push(c);
+    } else {
+      lunches.push(c);
+    }
+  }
+  return { lunches, pantry };
+}
+
 export function mapCategoriesWithPantryDefaults(categories: ShoppingCategory[]) {
   return categories.map((c) => ({
     ...c,

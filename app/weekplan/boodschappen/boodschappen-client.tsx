@@ -44,6 +44,7 @@ export function BoodschappenClient({
   shoppingListId,
   lunchesCategories,
   dinersCategories,
+  pantryCategories,
   pantryIntro,
   initialDinerHouseholdSize,
 }: {
@@ -51,7 +52,9 @@ export function BoodschappenClient({
   shoppingListId: string;
   lunchesCategories: ShoppingCategory[];
   dinersCategories: ShoppingCategory[];
-  /** Korte uitleg uit het weekplan (basisvoorraad); artikelen staan in de lunch/snacks-lijst. */
+  /** Basisvoorraad-categorieën («altijd op voorraad»); worden los onderaan getoond. */
+  pantryCategories: ShoppingCategory[];
+  /** Korte uitleg uit het weekplan (basisvoorraad). */
   pantryIntro?: string | null;
   initialDinerHouseholdSize: number;
 }) {
@@ -65,6 +68,10 @@ export function BoodschappenClient({
   );
   const [optDinners, applyDinnerToggle] = useOptimistic(
     dinersCategories,
+    applyPantryToggle,
+  );
+  const [optPantry, applyPantryItemToggle] = useOptimistic(
+    pantryCategories,
     applyPantryToggle,
   );
   const [optHouseholdSize, applyHouseholdSize] = useOptimistic(
@@ -95,6 +102,22 @@ export function BoodschappenClient({
     });
   }
 
+  function togglePantry(categoryId: string, itemId: string, nextPantry: boolean) {
+    startTransition(async () => {
+      applyPantryItemToggle({ categoryId, itemId, inPantry: nextPantry });
+      // Basisvoorraad-items worden in de lunch-lijst opgeslagen (basis::-id’s),
+      // dus de toggle gebruikt sectie "lunches".
+      await toggleShoppingPantryAction({
+        shoppingListId,
+        section: "lunches",
+        categoryId,
+        itemId,
+        inPantry: nextPantry,
+      });
+      router.refresh();
+    });
+  }
+
   function changeHouseholdSize(next: number) {
     const size = clampHouseholdSize(next);
     startHhTransition(async () => {
@@ -107,19 +130,14 @@ export function BoodschappenClient({
   const hasLunches = optLunches.length > 0;
   const hasDinners = optDinners.length > 0;
   const intro = pantryIntro?.trim();
+  const hasPantry = optPantry.length > 0 || Boolean(intro);
 
   return (
     <div className="space-y-12">
-      {intro ? (
-        <p className="rounded-xl border border-stone-200 bg-stone-50/90 px-4 py-3 text-sm text-stone-700">
-          {intro}
-        </p>
-      ) : null}
-
       {hasLunches ? (
         <CategoryBlock
           title="Voor lunches, ontbijt & snacks"
-          subtitle="Voor jou alleen, voor de hele week (7 ontbijten + 7 lunches + eventuele tussendoortjes). Onderaan deze lijst staan ook artikelen uit «altijd op voorraad» — vink aan wat je al in huis hebt."
+          subtitle="Voor jou alleen, voor de hele week (7 ontbijten + 7 lunches + eventuele tussendoortjes). Vink aan wat je al in huis hebt."
           categories={optLunches}
           scaleFactor={1}
           onToggle={(cid, iid, next) => toggle("lunches", cid, iid, next)}
@@ -185,7 +203,63 @@ export function BoodschappenClient({
         )}
       </section>
 
-      {!hasLunches && !hasDinners ? (
+      {hasPantry ? (
+        <section className="border-t border-stone-200 pt-8">
+          <div className="border-b border-stone-200 pb-3">
+            <h2 className="text-base font-semibold text-stone-900">
+              Altijd op voorraad
+            </h2>
+            <p className="mt-1 text-xs text-stone-600">
+              Heb je deze basisvoorraad in huis, dan zet je altijd snel een voedzame
+              maaltijd op tafel. Voor receptinspiratie kun je op basis van deze
+              ingrediënten altijd even googlen of het aan ChatGPT vragen. Vink aan wat
+              je al in huis hebt.
+            </p>
+          </div>
+          <div className="mt-4 space-y-8">
+            {optPantry.map((cat) => (
+              <div key={cat.id}>
+                <h3 className="border-b border-stone-200 pb-2 text-sm font-semibold uppercase tracking-wide text-stone-700">
+                  {cat.label}
+                </h3>
+                <ul className="mt-3 space-y-2">
+                  {cat.items.map((it) => {
+                    const inPantry = Boolean(it.in_pantry);
+                    return (
+                      <li
+                        key={it.id}
+                        className={`flex items-start justify-between gap-3 rounded-lg border px-3 py-2 text-sm ${
+                          inPantry
+                            ? "border-stone-200 bg-stone-100/80 text-stone-500 line-through"
+                            : "border-stone-200 bg-white text-stone-900"
+                        }`}
+                      >
+                        <span>
+                          <span className="font-medium">{it.name}</span>
+                          {it.quantity ? (
+                            <span className="ml-2 text-stone-600">{it.quantity}</span>
+                          ) : null}
+                        </span>
+                        <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-xs text-stone-600">
+                          <input
+                            type="checkbox"
+                            checked={inPantry}
+                            disabled={pending}
+                            onChange={() => togglePantry(cat.id, it.id, !inPantry)}
+                          />
+                          In voorraad
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {!hasLunches && !hasDinners && !hasPantry ? (
         <p className="text-sm text-stone-600">
           Deze boodschappenlijst is nog leeg. Genereer een nieuw weekplan om de
           gesplitste lijst (lunches/diners) te krijgen.
