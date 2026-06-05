@@ -18,27 +18,66 @@ export default async function WeekplanPage() {
     redirect("/login");
   }
 
-  const { data: row } = await supabase
+  const { data: rows } = await supabase
     .from("meal_plans")
     .select(
       "id, week_start, cook_sessions_per_week, snacks_enabled, payload, user_meta",
     )
     .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("week_start", { ascending: false })
+    .limit(10);
 
-  let initialPlan: MealPlanRow | null = null;
-  if (row) {
-    initialPlan = {
-      id: row.id,
-      week_start: row.week_start,
-      cook_sessions_per_week: row.cook_sessions_per_week,
-      snacks_enabled: row.snacks_enabled,
-      payload: row.payload as unknown as WeekPlanPayload,
-      user_meta: row.user_meta as MealPlanRow["user_meta"],
-    };
+  // Ontdubbel op week_start: bewaar het meest recente plan per week.
+  type PlanRow = NonNullable<typeof rows>[number];
+  const byWeek = new Map<string, PlanRow>();
+  for (const r of rows ?? []) {
+    if (!byWeek.has(r.week_start)) byWeek.set(r.week_start, r);
   }
+  const plans = [...byWeek.values()].sort((a, b) =>
+    b.week_start.localeCompare(a.week_start),
+  );
+
+  // Kies standaard het plan waarvan de week vandaag bevat; anders het eerstvolgende; anders het meest recente.
+  const todayIso = new Date().toISOString().slice(0, 10);
+  function weekEndIso(weekStart: string): string {
+    const d = new Date(weekStart + "T12:00:00");
+    d.setDate(d.getDate() + 6);
+    return d.toISOString().slice(0, 10);
+  }
+  const activePlan =
+    plans.find((p) => p.week_start <= todayIso && weekEndIso(p.week_start) >= todayIso) ??
+    plans.find((p) => p.week_start > todayIso) ??
+    plans[0] ??
+    null;
+
+  // Toon alleen huidige week + eerstvolgende week in de kiezer.
+  const currentWeekPlan = plans.find(
+    (p) => p.week_start <= todayIso && weekEndIso(p.week_start) >= todayIso,
+  );
+  const nextWeekPlan = plans.find((p) => p.week_start > todayIso);
+  const visiblePlans = [currentWeekPlan, nextWeekPlan]
+    .filter(Boolean)
+    .filter((p, i, arr) => arr.findIndex((q) => q!.id === p!.id) === i) as typeof plans;
+
+  const allPlans: MealPlanRow[] = visiblePlans.map((r) => ({
+    id: r.id,
+    week_start: r.week_start,
+    cook_sessions_per_week: r.cook_sessions_per_week,
+    snacks_enabled: r.snacks_enabled,
+    payload: r.payload as unknown as WeekPlanPayload,
+    user_meta: r.user_meta as MealPlanRow["user_meta"],
+  }));
+
+  const initialPlan: MealPlanRow | null = activePlan
+    ? {
+        id: activePlan.id,
+        week_start: activePlan.week_start,
+        cook_sessions_per_week: activePlan.cook_sessions_per_week,
+        snacks_enabled: activePlan.snacks_enabled,
+        payload: activePlan.payload as unknown as WeekPlanPayload,
+        user_meta: activePlan.user_meta as MealPlanRow["user_meta"],
+      }
+    : null;
 
   return (
     <main className="min-h-screen bg-stone-50 px-6 py-16">
@@ -61,7 +100,7 @@ export default async function WeekplanPage() {
           </p>
 
           <div className="mt-8">
-            <WeekplanClient initialPlan={initialPlan} />
+            <WeekplanClient initialPlan={initialPlan} allPlans={allPlans} />
           </div>
 
           <div className="mt-10 flex flex-col gap-3 border-t border-stone-200 pt-8 sm:flex-row sm:flex-wrap sm:gap-x-8">

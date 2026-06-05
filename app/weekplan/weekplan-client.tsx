@@ -59,18 +59,26 @@ function formatWeekStartNl(isoDate: string): string {
 
 export function WeekplanClient({
   initialPlan,
+  allPlans = [],
 }: {
   initialPlan: MealPlanRow | null;
+  allPlans?: MealPlanRow[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [genLoading, setGenLoading] = useState(false);
   const [genElapsedSec, setGenElapsedSec] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [activePlanId, setActivePlanId] = useState<string | null>(
+    initialPlan?.id ?? null,
+  );
 
   const [weekStart, setWeekStart] = useState(nextMondayIso);
   const [cook, setCook] = useState<3 | 5 | 7>(5);
   const [snacks, setSnacks] = useState(false);
+
+  const activePlan =
+    allPlans.find((p) => p.id === activePlanId) ?? initialPlan;
 
   useEffect(() => {
     if (initialPlan?.user_meta?.hydrationStatus !== "hydrating") return;
@@ -208,8 +216,8 @@ export function WeekplanClient({
   }
 
   const completed = new Set(
-    Array.isArray(initialPlan?.user_meta?.completedMealIds)
-      ? initialPlan!.user_meta!.completedMealIds
+    Array.isArray(activePlan?.user_meta?.completedMealIds)
+      ? activePlan!.user_meta!.completedMealIds
       : [],
   );
 
@@ -308,13 +316,34 @@ export function WeekplanClient({
         </form>
       </section>
 
-      {initialPlan ? (
+      {allPlans.length > 1 ? (
+        <div className="flex flex-wrap gap-2">
+          {allPlans.map((p) => {
+            const isActive = p.id === activePlan?.id;
+            return (
+              <button
+                key={p.id}
+                onClick={() => setActivePlanId(p.id)}
+                className={`rounded-xl border px-4 py-2 text-sm font-medium transition ${
+                  isActive
+                    ? "border-stone-900 bg-stone-900 text-white"
+                    : "border-stone-300 bg-white text-stone-700 hover:bg-stone-100"
+                }`}
+              >
+                Week van {formatWeekStartNl(p.week_start)}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {activePlan ? (
         <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
             <h2 className="text-lg font-semibold text-stone-900">Jouw week</h2>
             <div className="flex flex-wrap gap-3 text-sm">
               <Link
-                href={`/weekplan/boodschappen?mp=${initialPlan.id}`}
+                href={`/weekplan/boodschappen?mp=${activePlan.id}`}
                 className="font-medium text-stone-900 underline-offset-4 hover:underline"
               >
                 Boodschappenlijst
@@ -322,9 +351,9 @@ export function WeekplanClient({
             </div>
           </div>
           <p className="mt-1 text-sm text-stone-600">
-            Week van {formatWeekStartNl(initialPlan.week_start)} · {initialPlan.cook_sessions_per_week}{" "}
+            Week van {formatWeekStartNl(activePlan.week_start)} · {activePlan.cook_sessions_per_week}{" "}
             kooksessies
-            {initialPlan.snacks_enabled ? " · met tussendoortjes" : ""}
+            {activePlan.snacks_enabled ? " · met tussendoortjes" : ""}
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-stone-500">
             <li>Portieregel: alle recepten hebben een basisportie van 1 en zijn schaalbaar.</li>
@@ -337,23 +366,23 @@ export function WeekplanClient({
               koolhydraten.
             </li>
           </ul>
-          {initialPlan.user_meta?.hydrationStatus === "hydrating" ? (
+          {activePlan.user_meta?.hydrationStatus === "hydrating" ? (
             <p className="mt-3 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">
               Je weekplan staat klaar. We vullen nu de recepten verder aan (1-3
               min). Deze pagina ververst automatisch.
             </p>
           ) : null}
-          {initialPlan.user_meta?.hydrationStatus === "failed" ? (
+          {activePlan.user_meta?.hydrationStatus === "failed" ? (
             <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
               Aanvullen van receptdetails is nog niet gelukt.
-              {initialPlan.user_meta.hydrationError
-                ? ` ${initialPlan.user_meta.hydrationError}`
+              {activePlan.user_meta.hydrationError
+                ? ` ${activePlan.user_meta.hydrationError}`
                 : ""}
             </p>
           ) : null}
 
           <div className="mt-6 space-y-8">
-            {initialPlan.payload.days.map((day) => {
+            {activePlan.payload.days.map((day) => {
               const d = new Date(day.date_iso + "T12:00:00");
               const dayTitle = d.toLocaleDateString("nl-NL", {
                 weekday: "long",
@@ -384,7 +413,7 @@ export function WeekplanClient({
                               {slotLabel[m.slot] ?? m.slot}
                             </p>
                             <Link
-                              href={`/weekplan/recept/${encodeURIComponent(m.id)}?mp=${initialPlan.id}`}
+                              href={`/weekplan/recept/${encodeURIComponent(m.id)}?mp=${activePlan.id}`}
                               className="mt-0.5 block text-sm font-semibold text-stone-900 underline-offset-4 hover:underline"
                             >
                               {m.title}
@@ -403,7 +432,7 @@ export function WeekplanClient({
                               onChange={() => {
                                 startTransition(async () => {
                                   await toggleMealDoneAction({
-                                    mealPlanId: initialPlan.id,
+                                    mealPlanId: activePlan.id,
                                     mealId: m.id,
                                     done: !done,
                                   });
