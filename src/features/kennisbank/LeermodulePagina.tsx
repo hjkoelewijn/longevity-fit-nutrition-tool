@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { LeestijdBadge } from "@/src/components/LeestijdBadge";
+import { VerdiepingBlok } from "@/src/components/VerdiepingBlok";
 import type { LeermoduleData } from "@/src/data/modules/hormonen";
+import type { LeermoduleDataMetVerdieping } from "@/src/data/modules/goede-vetten";
 import { ModuleTimeTracker } from "@/src/features/kennisbank/ModuleTimeTracker";
 
 function renderInlineBold(text: string) {
@@ -45,7 +47,12 @@ function renderMarkdown(md: string) {
     }
     const p = [line];
     i += 1;
-    while (i < lines.length && lines[i].trim() && !/^\*\*[^*]+\*\*$/.test(lines[i].trim()) && !lines[i].trim().startsWith("- ")) {
+    while (
+      i < lines.length &&
+      lines[i].trim() &&
+      !/^\*\*[^*]+\*\*$/.test(lines[i].trim()) &&
+      !lines[i].trim().startsWith("- ")
+    ) {
       p.push(lines[i].trim());
       i += 1;
     }
@@ -62,7 +69,10 @@ function renderMarkdown(md: string) {
     }
     if (block.type === "list") {
       return (
-        <ul key={idx} className="mt-4 list-disc space-y-2 pl-5 text-base leading-[1.7] text-[#2A2520] marker:text-[#D4AF37]">
+        <ul
+          key={idx}
+          className="mt-4 list-disc space-y-2 pl-5 text-base leading-[1.7] text-[#2A2520] marker:text-[#D4AF37]"
+        >
           {block.items.map((item, itemIdx) => (
             <li key={itemIdx}>{renderInlineBold(item)}</li>
           ))}
@@ -77,23 +87,46 @@ function renderMarkdown(md: string) {
   });
 }
 
-export function LeermodulePagina({ module }: { module: LeermoduleData }) {
+type LeermodulePaginaProps = {
+  module: LeermoduleData | LeermoduleDataMetVerdieping;
+  terug?: { label: string; pad: string };
+  volgende?: { label: string; pad: string };
+};
+
+function hasVerdieping(m: LeermoduleData | LeermoduleDataMetVerdieping): m is LeermoduleDataMetVerdieping {
+  return "verdieping" in m && typeof (m as LeermoduleDataMetVerdieping).verdieping === "string";
+}
+
+export function LeermodulePagina({ module, terug, volgende }: LeermodulePaginaProps) {
   const parts = module.content.split("**Tot slot**");
   const mainContent = parts[0] ?? "";
   const totSlotContent = parts[1] ?? "";
+
+  const verdiepingMinuten = hasVerdieping(module)
+    ? (module as LeermoduleDataMetVerdieping).leestijdVerdiepingMinuten
+    : undefined;
+
+  const verdiepingContent = hasVerdieping(module)
+    ? (module as LeermoduleDataMetVerdieping).verdieping
+    : undefined;
+
+  const terugLink = terug ?? { label: "← Terug naar kennisbank", pad: "/kennisbank" };
 
   return (
     <main className="min-h-screen bg-[#FAF7F2] px-4 py-10 sm:px-6 sm:py-14">
       <ModuleTimeTracker moduleId={module.id} />
       <div className="mx-auto w-full max-w-[680px] space-y-8">
-        <Link href="/kennisbank" className="text-sm font-medium text-stone-800 underline underline-offset-4">
-          ← Terug naar kennisbank
+        <Link
+          href={terugLink.pad}
+          className="text-sm font-medium text-stone-800 underline underline-offset-4"
+        >
+          {terugLink.label}
         </Link>
 
         <header className="space-y-3">
           <h1 className="text-5xl italic text-[#2A2520]">{module.titel}</h1>
           <p className="text-lg text-stone-700">{module.subtitel}</p>
-          <LeestijdBadge minuten={module.leestijdMinuten} />
+          <LeestijdBadge minuten={module.leestijdMinuten} verdiepingMinuten={verdiepingMinuten} />
         </header>
 
         <article className="rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
@@ -104,18 +137,39 @@ export function LeermodulePagina({ module }: { module: LeermoduleData }) {
               <div>{renderMarkdown(totSlotContent)}</div>
             </section>
           ) : null}
+          {verdiepingContent ? (
+            <VerdiepingBlok moduleId={module.id} content={verdiepingContent} />
+          ) : null}
         </article>
+
+        <nav className="flex items-center justify-between gap-4 pt-2">
+          <Link
+            href={terugLink.pad}
+            className="text-sm font-medium text-stone-700 underline underline-offset-4"
+          >
+            {terugLink.label}
+          </Link>
+          {volgende && (
+            <Link
+              href={volgende.pad}
+              className="text-sm font-medium text-[#9C7A22] underline underline-offset-4"
+            >
+              Volgende: {volgende.label} →
+            </Link>
+          )}
+        </nav>
 
         <footer className="text-sm leading-7 text-stone-600">
           <p>
-            {module.footerDisclaimer}{" "}
-            <Link href="/over#visie" className="underline underline-offset-4">
-              Lees meer over onze visie
-            </Link>
+            <em>
+              {module.footerDisclaimer}{" "}
+              <Link href="/over#visie" className="underline underline-offset-4">
+                Lees meer over onze visie
+              </Link>
+            </em>
           </p>
         </footer>
       </div>
     </main>
   );
 }
-

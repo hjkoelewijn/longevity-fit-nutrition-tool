@@ -11,6 +11,7 @@ export type KennisbankCategorie = {
   korteOmschrijving: string;
   modules: ModuleEntry[];
   status: "actief" | "preview";
+  pad?: string;
 };
 
 export const kennisbankIntro = [
@@ -42,17 +43,39 @@ export const kennisbankCategorieen: KennisbankCategorie[] = [
     id: "de-basis",
     titel: "De basis",
     korteOmschrijving: "De fundamenten van eten voor je 40+ lichaam.",
-    status: "preview",
+    status: "actief",
+    pad: "/kennisbank/de-basis",
     modules: [
-      { id: "eetmomenten", titel: "Waarom max 4 eetmomenten?", klikbaar: false },
+      {
+        id: "eetmomenten",
+        titel: "Waarom max 4 eetmomenten?",
+        klikbaar: true,
+        pad: "/kennisbank/de-basis/eetmomenten",
+      },
       {
         id: "koolhydraten",
         titel: "Koolhydraten: wanneer wel, wanneer minder",
-        klikbaar: false,
+        klikbaar: true,
+        pad: "/kennisbank/de-basis/koolhydraten",
       },
-      { id: "vetten", titel: "Goede vetten en de omega 3/6 balans", klikbaar: false },
-      { id: "eiwitten", titel: "Eiwitten: dierlijk en plantaardig", klikbaar: false },
-      { id: "bloedsuiker", titel: "Bloedsuiker, insuline en je energie", klikbaar: false },
+      {
+        id: "goede-vetten",
+        titel: "Goede vetten en de omega 3/6 balans",
+        klikbaar: true,
+        pad: "/kennisbank/de-basis/goede-vetten",
+      },
+      {
+        id: "eiwitten",
+        titel: "Eiwitten: dierlijk en plantaardig",
+        klikbaar: true,
+        pad: "/kennisbank/de-basis/eiwitten",
+      },
+      {
+        id: "bloedsuiker",
+        titel: "Bloedsuiker, insuline en je energie",
+        klikbaar: true,
+        pad: "/kennisbank/de-basis/bloedsuiker",
+      },
     ],
   },
   {
