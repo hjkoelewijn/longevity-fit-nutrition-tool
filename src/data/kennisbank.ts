@@ -82,7 +82,8 @@ export const kennisbankCategorieen: KennisbankCategorie[] = [
     id: "hoe-je-eet-en-leeft",
     titel: "Hoe je eet en leeft",
     korteOmschrijving: "Het is niet alleen wat je eet, maar ook hoe en wanneer.",
-    status: "preview",
+    status: "actief",
+    pad: "/kennisbank/hoe-je-eet-en-leeft",
     modules: [
       {
         id: "tussendoortjes",

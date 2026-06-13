@@ -39,6 +39,8 @@ export function KennisbankCategoriePagina({
   }, [categorie.id]);
 
   const metaByModuleId = Object.fromEntries(modulesMeta.map((m) => [m.id, m]));
+  const beschikbareModules = categorie.modules.filter((m) => m.klikbaar && m.pad);
+  const binnenkortModules = categorie.modules.filter((m) => !m.klikbaar);
 
   return (
     <main className="min-h-screen bg-[#FAF7F2] px-4 py-10 sm:px-6 sm:py-14">
@@ -56,8 +58,7 @@ export function KennisbankCategoriePagina({
         </header>
 
         <section className="space-y-4">
-          {categorie.modules.map((module) => {
-            if (!module.klikbaar || !module.pad) return null;
+          {beschikbareModules.map((module) => {
             const meta = metaByModuleId[module.id];
             return (
               <LeermoduleKaart
@@ -68,11 +69,27 @@ export function KennisbankCategoriePagina({
                 subtitel={meta?.subtitel}
                 leestijdMinuten={meta?.leestijdMinuten ?? 5}
                 leestijdVerdiepingMinuten={meta?.leestijdVerdiepingMinuten}
-                pad={module.pad}
+                pad={module.pad!}
               />
             );
           })}
         </section>
+
+        {binnenkortModules.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-2xl italic text-[#2A2520]">Binnenkort beschikbaar</h2>
+            <div className="space-y-3">
+              {binnenkortModules.map((module) => (
+                <div
+                  key={module.id}
+                  className="rounded-2xl border border-stone-200 bg-stone-50 px-6 py-4 opacity-60"
+                >
+                  <span className="text-base text-stone-500">{module.titel}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </main>
   );
