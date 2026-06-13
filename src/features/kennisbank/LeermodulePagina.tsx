@@ -5,15 +5,22 @@ import type { LeermoduleData } from "@/src/data/modules/hormonen";
 import type { LeermoduleDataMetVerdieping } from "@/src/data/modules/goede-vetten";
 import { ModuleTimeTracker } from "@/src/features/kennisbank/ModuleTimeTracker";
 
-function renderInlineBold(text: string) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((part, idx) =>
-    part.startsWith("**") && part.endsWith("**") ? (
-      <strong key={idx}>{part.slice(2, -2)}</strong>
-    ) : (
-      <span key={idx}>{part}</span>
-    ),
-  );
+function renderInline(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g);
+  return parts.map((part, idx) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={idx}>{part.slice(2, -2)}</strong>;
+    }
+    const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (linkMatch) {
+      return (
+        <Link key={idx} href={linkMatch[2]} className="font-medium text-[#9C7A22] underline-offset-2 hover:underline">
+          {linkMatch[1]}
+        </Link>
+      );
+    }
+    return <span key={idx}>{part}</span>;
+  });
 }
 
 function renderMarkdown(md: string) {
@@ -74,14 +81,14 @@ function renderMarkdown(md: string) {
           className="mt-4 list-disc space-y-2 pl-5 text-base leading-[1.7] text-[#2A2520] marker:text-[#D4AF37]"
         >
           {block.items.map((item, itemIdx) => (
-            <li key={itemIdx}>{renderInlineBold(item)}</li>
+            <li key={itemIdx}>{renderInline(item)}</li>
           ))}
         </ul>
       );
     }
     return (
       <p key={idx} className="mt-4 text-base leading-[1.7] text-[#2A2520]">
-        {renderInlineBold(block.text)}
+        {renderInline(block.text)}
       </p>
     );
   });

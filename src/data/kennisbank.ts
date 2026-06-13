@@ -84,12 +84,22 @@ export const kennisbankCategorieen: KennisbankCategorie[] = [
     korteOmschrijving: "Het is niet alleen wat je eet, maar ook hoe en wanneer.",
     status: "preview",
     modules: [
-      { id: "tussendoortjes", titel: "Tussendoortjes: trek vs. gewoonte", klikbaar: false },
-      { id: "alcohol", titel: "Alcohol en je hormonen", klikbaar: false },
-      { id: "fasting", titel: "Fasting voor vrouwen 40+", klikbaar: false },
-      { id: "sociale-events", titel: "Etentjes en sociale events", klikbaar: false },
+      {
+        id: "tussendoortjes",
+        titel: "Tussendoortjes: trek vs. gewoonte",
+        klikbaar: true,
+        pad: "/kennisbank/hoe-je-eet-en-leeft/tussendoortjes",
+      },
+      {
+        id: "hoe-je-eet",
+        titel: "Hoe je eet, niet alleen wat je eet",
+        klikbaar: true,
+        pad: "/kennisbank/hoe-je-eet-en-leeft/hoe-je-eet",
+      },
       { id: "stress", titel: "Stress en je lichaam", klikbaar: false },
-      { id: "hoe-je-eet", titel: "Hoe je eet, niet alleen wat je eet", klikbaar: false },
+      { id: "fasting", titel: "Fasting voor vrouwen 40+", klikbaar: false },
+      { id: "alcohol", titel: "Alcohol en je hormonen", klikbaar: false },
+      { id: "etentjes", titel: "Etentjes en sociale events", klikbaar: false },
     ],
   },
   {
