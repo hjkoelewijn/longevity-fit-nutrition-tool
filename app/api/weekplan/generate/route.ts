@@ -9,6 +9,8 @@ import {
   collectAllMeals,
   pantryStaplesAsPseudoMeals,
   uniqueDinnerTitles,
+  uniqueOntbijtTitles,
+  uniqueLunchTitles,
 } from "@/lib/weekplan/meals-helpers";
 import { buildShoppingListInsertPayload } from "@/lib/weekplan/shopping-storage";
 import {
@@ -44,6 +46,87 @@ function isTransientNetworkError(error: unknown): boolean {
       : "";
   const net = `${raw} ${cause}`.toLowerCase();
   return net.includes("etimedout") || net.includes("econnreset");
+}
+
+/**
+ * Als shopping_list ontbreekt of leeg is maar de dagen wel maaltijden bevatten,
+ * bouw dan een minimale boodschappenlijst vanuit de ingrediënten.
+ * Valt terug op lege arrays als er ook geen ingrediënten zijn.
+ */
+function ensureShoppingListFallback(data: unknown): unknown {
+  if (!data || typeof data !== "object") return data;
+  const obj = data as Record<string, unknown>;
+  const sl = obj.shopping_list as Record<string, unknown> | undefined;
+
+  const hasLunches =
+    sl?.lunches_breakfast_snacks &&
+    typeof sl.lunches_breakfast_snacks === "object" &&
+    Array.isArray((sl.lunches_breakfast_snacks as { categories?: unknown[] }).categories) &&
+    ((sl.lunches_breakfast_snacks as { categories: unknown[] }).categories).length > 0;
+  const hasDinners =
+    sl?.dinners &&
+    typeof sl.dinners === "object" &&
+    Array.isArray((sl.dinners as { categories?: unknown[] }).categories) &&
+    ((sl.dinners as { categories: unknown[] }).categories).length > 0;
+
+  if (hasLunches && hasDinners) return data;
+
+  // Poog ingrediënten te extraheren uit de dagen
+  const days = Array.isArray(obj.days) ? (obj.days as unknown[]) : [];
+  const lunchItems: Array<{ id: string; name: string; quantity: string }> = [];
+  const dinnerItems: Array<{ id: string; name: string; quantity: string }> = [];
+
+  for (const day of days) {
+    if (!day || typeof day !== "object") continue;
+    const meals = (day as Record<string, unknown>).meals as Record<string, unknown> | undefined;
+    if (!meals) continue;
+    for (const slot of ["ontbijt", "lunch"] as const) {
+      const meal = meals[slot] as { ingredients?: Array<{ name?: string; amount?: string }> } | undefined;
+      if (!meal?.ingredients) continue;
+      for (const ing of meal.ingredients) {
+        if (ing?.name) {
+          lunchItems.push({
+            id: `${slot}-${ing.name.replace(/\s+/g, "-").toLowerCase()}`,
+            name: ing.name,
+            quantity: ing.amount ?? "",
+          });
+        }
+      }
+    }
+    const diner = meals.diner as { ingredients?: Array<{ name?: string; amount?: string }> } | undefined;
+    if (diner?.ingredients) {
+      for (const ing of diner.ingredients) {
+        if (ing?.name) {
+          dinnerItems.push({
+            id: `diner-${ing.name.replace(/\s+/g, "-").toLowerCase()}`,
+            name: ing.name,
+            quantity: ing.amount ?? "",
+          });
+        }
+      }
+    }
+  }
+
+  obj.shopping_list = {
+    ...(sl ?? {}),
+    lunches_breakfast_snacks: hasLunches
+      ? sl!.lunches_breakfast_snacks
+      : {
+          categories:
+            lunchItems.length > 0
+              ? [{ id: "ontbijt-lunch", label: "Ontbijt & lunch", items: lunchItems }]
+              : [],
+        },
+    dinners: hasDinners
+      ? sl!.dinners
+      : {
+          categories:
+            dinnerItems.length > 0
+              ? [{ id: "diner", label: "Diner", items: dinnerItems }]
+              : [],
+        },
+  };
+  return obj;
 }
 
 function ensureAlwaysInStockFallback(data: unknown): unknown {
@@ -168,6 +251,14 @@ export async function POST(request: Request) {
       prevPlan?.payload && typeof prevPlan.payload === "object"
         ? uniqueDinnerTitles(prevPlan.payload as unknown as WeekPlanPayload).slice(0, 20)
         : [];
+    const previousWeekOntbijtTitles =
+      prevPlan?.payload && typeof prevPlan.payload === "object"
+        ? uniqueOntbijtTitles(prevPlan.payload as unknown as WeekPlanPayload).slice(0, 14)
+        : [];
+    const previousWeekLunchTitles =
+      prevPlan?.payload && typeof prevPlan.payload === "object"
+        ? uniqueLunchTitles(prevPlan.payload as unknown as WeekPlanPayload).slice(0, 14)
+        : [];
     const repeatPolicy =
       cook === 3
         ? { maxRepeatsFromPreviousWeek: 3, minNewMeals: 12 }
@@ -191,6 +282,8 @@ export async function POST(request: Request) {
       servings,
       draftMode: true,
       previousWeekDinnerTitles,
+      previousWeekOntbijtTitles,
+      previousWeekLunchTitles,
       repeatPolicy,
     });
 
@@ -315,7 +408,12 @@ export async function POST(request: Request) {
       const retryPantry =
         (shape.code === "pantry" || shape.code === "pantry_items") &&
         attempt === 0;
-      if (!retryCarb && !retryPantry) {
+      const retryShopping =
+        (shape.code === "shopping" || shape.code === "shopping_split") &&
+        attempt === 0;
+
+      if (!retryCarb && !retryPantry && !retryShopping) {
+        // Probeer stille fallbacks voor pantry en shopping vóór harde fout
         if (shape.code === "pantry" || shape.code === "pantry_items") {
           parsed = ensureAlwaysInStockFallback(parsed);
           const fallbackShape = validateWeekPlanPayload(parsed, {
@@ -323,9 +421,18 @@ export async function POST(request: Request) {
           });
           if (fallbackShape.ok) {
             finalParsed = parsed;
-            console.warn(
-              "[weekplan/generate] pantry-fallback toegepast",
-            );
+            console.warn("[weekplan/generate] pantry-fallback toegepast");
+            break;
+          }
+        }
+        if (shape.code === "shopping" || shape.code === "shopping_split") {
+          parsed = ensureShoppingListFallback(parsed);
+          const fallbackShape = validateWeekPlanPayload(parsed, {
+            snacksEnabled: snacks,
+          });
+          if (fallbackShape.ok) {
+            finalParsed = parsed;
+            console.warn("[weekplan/generate] shopping-fallback toegepast");
             break;
           }
         }
@@ -342,7 +449,9 @@ export async function POST(request: Request) {
 
       const retryHint = retryCarb
         ? "Harde regel: per dag (day_index 1–7) maximaal twee maaltijden met carb_profile \"light\" of \"primary\" over ontbijt+lunch+diner+tussendoortjes samen; alle andere maaltijden die dag: carb_profile \"none\"."
-        : "Harde regel: always_in_stock is verplicht en moet intro + minstens 3 categorieën bevatten met concrete items (oliën, kruiden, voorraadkast/diepvries/basis).";
+        : retryShopping
+          ? "Harde regel: shopping_list MOET altijd beide velden bevatten, ook als één ervan leeg is: { \"lunches_breakfast_snacks\": { \"categories\": [] }, \"dinners\": { \"categories\": [] } }. Lever een volledige gesplitste boodschappenlijst aan voor ontbijt/lunch/snacks én voor diners apart."
+          : "Harde regel: always_in_stock is verplicht en moet intro + minstens 3 categorieën bevatten met concrete items (oliën, kruiden, voorraadkast/diepvries/basis).";
       console.warn(
         "[weekplan/generate] automatische hergeneratie",
         shape.code,

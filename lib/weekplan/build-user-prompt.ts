@@ -1,5 +1,6 @@
 import { KOOLHYDRAATMOMENT_UITLEG_VOOR_PROMPT, ZOETE_AARDAPPEL_REGEL_EEN_ZIN } from "./carb-moment-rules";
 import { ONE_PORTION_AMOUNT_GUIDELINES_PROMPT } from "./portion-amount-guidelines";
+import seizoenenData from "@/src/data/seizoenen.json";
 
 export type ProfileBundle = {
   profile: Record<string, unknown>;
@@ -11,11 +12,42 @@ export type ProfileBundle = {
   servings: number;
   draftMode?: boolean;
   previousWeekDinnerTitles?: string[];
+  previousWeekOntbijtTitles?: string[];
+  previousWeekLunchTitles?: string[];
   repeatPolicy?: {
     maxRepeatsFromPreviousWeek: number;
     minNewMeals: number;
   };
 };
+
+type SeizoenKey = "lente" | "zomer" | "herfst" | "winter";
+
+function getSeizoensData(maand: number) {
+  const seizoenen = seizoenenData.seizoenen as Record<SeizoenKey, {
+    maanden: number[];
+    groenten: string[];
+    fruit: string[];
+    paddenstoelen: string[];
+    vis_en_zeevruchten: string[];
+    vlees_en_gevogelte: string[];
+    kruiden_vers: string[];
+    notities: string;
+  }>;
+  const entry = (Object.entries(seizoenen) as [SeizoenKey, typeof seizoenen[SeizoenKey]][])
+    .find(([, s]) => s.maanden.includes(maand));
+  if (!entry) return null;
+  const [naam, s] = entry;
+  return {
+    naam,
+    groenten: [...s.groenten, ...seizoenenData.hele_jaar.groenten],
+    fruit: s.fruit,
+    vis: s.vis_en_zeevruchten,
+    vlees: s.vlees_en_gevogelte,
+    kruiden: s.kruiden_vers,
+    paddenstoelen: s.paddenstoelen,
+    notities: s.notities,
+  };
+}
 
 const JSON_SCHEMA_HINT = `
 Het antwoord moet EXACT één JSON-object zijn (geen markdown, geen uitleg erna), met deze structuur:
@@ -49,6 +81,8 @@ Het antwoord moet EXACT één JSON-object zijn (geen markdown, geen uitleg erna)
       ]
     }
   },
+BELANGRIJK shopping_list: geef ALTIJD beide velden terug, ook als één ervan leeg is — dus nooit shopping_list weglaten of als platte categories aanleveren. Bij twijfel: lege array is beter dan het veld weglaten.
+  "shopping_list": { "lunches_breakfast_snacks": { "categories": [] }, "dinners": { "categories": [] } }
   "always_in_stock": {
     "intro": "Korte uitleg: eenmalige investering in basisvoorraad zodat je daarna snel voedzame maaltijden kunt maken (geen schuldgevoel als iets nog ontbreekt).",
     "categories": [
@@ -81,6 +115,9 @@ Regels:
 `.trim();
 
 export function buildWeekPlanUserPrompt(bundle: ProfileBundle): string {
+  const startDate = new Date(bundle.weekStartIso + "T12:00:00");
+  const maand = startDate.getMonth() + 1;
+  const seizoen = getSeizoensData(maand);
   const p = bundle.profile;
   const gutStatus =
     p.gut_status && typeof p.gut_status === "object"
@@ -136,6 +173,50 @@ Snelheidsmodus (eerste versie voor snelle UX):
 - Lever wel ALLE verplichte velden/schema-onderdelen volledig aan (ook shopping_list + always_in_stock).
 `.trim()
     : "";
+
+  const seizoensBlock = seizoen ? `
+Seizoen & beschikbare ingrediënten (leidend, niet optioneel):
+Huidig seizoen: ${seizoen.naam} (maand ${maand})
+
+Groenten in seizoen — begin hier, varieer actief over de hele lijst (niet alleen de vertrouwde 5):
+${seizoen.groenten.join(", ")}
+
+Fruit in seizoen: ${seizoen.fruit.join(", ")}
+
+Vis & zeevruchten nu beschikbaar: ${seizoen.vis.join(", ")}
+
+Vlees & gevogelte nu beschikbaar: ${seizoen.vlees.join(", ")}
+
+Verse kruiden in seizoen: ${seizoen.kruiden.join(", ")}
+
+Paddenstoelen: ${seizoen.paddenstoelen.join(", ")}
+
+Seizoensnota (lees en pas toe): ${seizoen.notities}
+`.trim() : "";
+
+  const variatieBlock = `
+Variatie-eisen voor deze week (verplicht, niet optioneel):
+- Groenten: maximaal 2× hetzelfde groente als hoofdgroente per week. Kies bewust voor groenten die minder voor de hand liggen.
+- Eiwit: maximaal 2× kip, maximaal 2× zalm/kabeljauw/zeebaars samen; minimaal 1× ander vlees (rund, lam, wild, eend) of vette vis (makreel, haring, sardines). Kip is aanvulling, niet default.
+- Keukenstijl: varieer over minimaal 3 van deze 6: Mediterraan (citroen/olijfolie/olijven), Aziatisch (tamari/gember/sesamolie/paksoi), Indiaas/Midden-Oosten (kurkuma/komijn/tahini/za'atar), Noord-Europees (dille/mosterd/haring/rogge), Mexicaans (limoen/avocado/koriander/bonen), Frans (bouillon/dragon/mosterd/sjalot).
+- Gerechtsstructuur: maximaal 2× "eiwit + groente op een bord/salade". Wissel af met: soep of stoofpot, wokschotel, ovenschotel, gevulde groente, curry of ragout, frittata, eenpansgerecht met peulvruchten, koude salade met warme component.
+- Ontbijt: elk format maximaal 1× per week. Formats: eieren (gebakken/roerei/omelet/gepocheerd), havermout of warme pap, yoghurt of kwark met toppings, chiapudding of overnight oats, smoothie of smoothiebowl, savory ontbijt (zalm/avocado/restjes), brood of pannenkoekjes (max 1×).
+- Weekdag-verbod: geen vaste koppeling weekdag–gerecht. Maandag is niet automatisch yoghurt, vrijdag niet automatisch vis.
+`.trim();
+
+  const antiHerhalingBlock = (() => {
+    const diners = bundle.previousWeekDinnerTitles ?? [];
+    const ontbijts = bundle.previousWeekOntbijtTitles ?? [];
+    const lunches = bundle.previousWeekLunchTitles ?? [];
+    if (!diners.length && !ontbijts.length && !lunches.length) return "";
+    const lines: string[] = [
+      "Gebruikt in de afgelopen week(en) — niet exact herhalen (wezenlijk andere combinatie van eiwit, groente of keuken):",
+    ];
+    if (diners.length) lines.push(`Diners: ${diners.join(", ")}`);
+    if (ontbijts.length) lines.push(`Ontbijts: ${ontbijts.join(", ")}`);
+    if (lunches.length) lines.push(`Lunches (excl. restjes): ${lunches.filter(t => !t.toLowerCase().includes("restje")).join(", ")}`);
+    return lines.join("\n");
+  })();
 
   const repeatBlock =
     bundle.previousWeekDinnerTitles && bundle.previousWeekDinnerTitles.length > 0 && bundle.repeatPolicy
@@ -214,6 +295,12 @@ Kooksessies (cook_sessions_per_week = ${bundle.cookSessionsPerWeek}):
 - Andere dagen: restjes/herhaling (zet repeat_for_leftovers waar logisch), tweede dag hetzelfde gerecht of voorbereid uit eerdere sessie. Houd rekening met eating_pattern uit raw_profile (o.a. eat_out_per_week) voor hoe vaak uit eten past — geen harde aannames buiten profiel.
 - Bij 3 sessies: plan vaker dubbele porties of dezelfde schotel opnieuw (lunch volgende dag) zodat 7 dagen haalbaar blijft zonder elke avond lang koken.
 - Als lunch op dag N restjes van diner dag N-1 gebruikt, benoem dit in titel/repeat_for_leftovers zonder servings kunstmatig te verhogen.
+
+${seizoensBlock}
+
+${variatieBlock}
+
+${antiHerhalingBlock}
 
 ${digestiveGuardrailBlock}
 

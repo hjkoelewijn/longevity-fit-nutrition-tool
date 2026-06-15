@@ -315,6 +315,7 @@ export function validateWeekPlanPayload(
   if (lunchesCount + dinnersCount + legacyCount === 0) {
     return {
       ok: false,
+      soft: true,
       code: "shopping",
       message:
         "Boodschappenlijst ontbreekt of is leeg. Lever shopping_list.lunches_breakfast_snacks en shopping_list.dinners aan.",
@@ -323,6 +324,7 @@ export function validateWeekPlanPayload(
   if (legacyCount > 0 && lunchesCount === 0 && dinnersCount === 0) {
     return {
       ok: false,
+      soft: true,
       code: "shopping_split",
       message:
         "Boodschappenlijst moet gesplitst worden in shopping_list.lunches_breakfast_snacks en shopping_list.dinners (niet één platte lijst onder shopping_list.categories).",
