@@ -24,6 +24,26 @@ export function uniqueDinnerTitles(payload: WeekPlanPayload): string[] {
   return [...set];
 }
 
+export function uniqueOntbijtTitles(payload: WeekPlanPayload): string[] {
+  const set = new Set<string>();
+  for (const day of payload.days) {
+    const t = day.meals.ontbijt.title.trim();
+    if (!t) continue;
+    set.add(t.toLowerCase());
+  }
+  return [...set];
+}
+
+export function uniqueLunchTitles(payload: WeekPlanPayload): string[] {
+  const set = new Set<string>();
+  for (const day of payload.days) {
+    const t = day.meals.lunch.title.trim();
+    if (!t) continue;
+    set.add(t.toLowerCase());
+  }
+  return [...set];
+}
+
 /** Voor allergie-regex op voorraadlijst (zelfde velden als WeekPlanMeal voor checkAllergiesInMeals). */
 export function pantryStaplesAsPseudoMeals(pantry: AlwaysInStockBlock): WeekPlanMeal[] {
   const out: WeekPlanMeal[] = [];
