@@ -1,16 +1,16 @@
 import { LeermodulePagina } from "@/src/features/kennisbank/LeermodulePagina";
-import { hoeJeEetModule } from "@/src/data/modules/hoe-je-eet";
+import { alcoholModule } from "@/src/data/modules/alcohol";
 
 export const dynamic = "force-dynamic";
 
-export default function HoeJeEetModulePage() {
+export default function AlcoholModulePage() {
   return (
     <LeermodulePagina
-      module={hoeJeEetModule}
+      module={alcoholModule}
       terug={{ label: "← Terug naar Hoe je eet en leeft", pad: "/kennisbank/hoe-je-eet-en-leeft" }}
       volgende={{
-        label: "Stress en je lichaam",
-        pad: "/kennisbank/hoe-je-eet-en-leeft/stress",
+        label: "Etentjes en sociale events",
+        pad: "/kennisbank/hoe-je-eet-en-leeft/etentjes",
       }}
     />
   );
