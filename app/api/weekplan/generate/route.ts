@@ -48,10 +48,15 @@ function isTransientNetworkError(error: unknown): boolean {
   return net.includes("etimedout") || net.includes("econnreset");
 }
 
+function isOverloadedError(error: unknown): boolean {
+  const raw = error instanceof Error ? error.message : String(error);
+  return raw.includes("overloaded_error") || raw.includes("529") || raw.includes("Overloaded");
+}
+
 /**
- * Als shopping_list ontbreekt of leeg is maar de dagen wel maaltijden bevatten,
- * bouw dan een minimale boodschappenlijst vanuit de ingrediënten.
- * Valt terug op lege arrays als er ook geen ingrediënten zijn.
+ * Als shopping_list ontbreekt of leeg is, vul dan een minimale placeholder in.
+ * In draftMode zijn ingrediënten altijd [], dus extraheren heeft geen zin.
+ * De hydratatiestap bouwt later de echte boodschappenlijst vanuit de recepten.
  */
 function ensureShoppingListFallback(data: unknown): unknown {
   if (!data || typeof data !== "object") return data;
@@ -71,60 +76,20 @@ function ensureShoppingListFallback(data: unknown): unknown {
 
   if (hasLunches && hasDinners) return data;
 
-  // Poog ingrediënten te extraheren uit de dagen
-  const days = Array.isArray(obj.days) ? (obj.days as unknown[]) : [];
-  const lunchItems: Array<{ id: string; name: string; quantity: string }> = [];
-  const dinnerItems: Array<{ id: string; name: string; quantity: string }> = [];
-
-  for (const day of days) {
-    if (!day || typeof day !== "object") continue;
-    const meals = (day as Record<string, unknown>).meals as Record<string, unknown> | undefined;
-    if (!meals) continue;
-    for (const slot of ["ontbijt", "lunch"] as const) {
-      const meal = meals[slot] as { ingredients?: Array<{ name?: string; amount?: string }> } | undefined;
-      if (!meal?.ingredients) continue;
-      for (const ing of meal.ingredients) {
-        if (ing?.name) {
-          lunchItems.push({
-            id: `${slot}-${ing.name.replace(/\s+/g, "-").toLowerCase()}`,
-            name: ing.name,
-            quantity: ing.amount ?? "",
-          });
-        }
-      }
-    }
-    const diner = meals.diner as { ingredients?: Array<{ name?: string; amount?: string }> } | undefined;
-    if (diner?.ingredients) {
-      for (const ing of diner.ingredients) {
-        if (ing?.name) {
-          dinnerItems.push({
-            id: `diner-${ing.name.replace(/\s+/g, "-").toLowerCase()}`,
-            name: ing.name,
-            quantity: ing.amount ?? "",
-          });
-        }
-      }
-    }
-  }
+  const placeholderItem = {
+    id: "placeholder",
+    name: "Wordt aangevuld na recepten genereren",
+    quantity: "",
+  };
 
   obj.shopping_list = {
     ...(sl ?? {}),
     lunches_breakfast_snacks: hasLunches
       ? sl!.lunches_breakfast_snacks
-      : {
-          categories:
-            lunchItems.length > 0
-              ? [{ id: "ontbijt-lunch", label: "Ontbijt & lunch", items: lunchItems }]
-              : [],
-        },
+      : { categories: [{ id: "ontbijt-lunch", label: "Ontbijt & lunch", items: [placeholderItem] }] },
     dinners: hasDinners
       ? sl!.dinners
-      : {
-          categories:
-            dinnerItems.length > 0
-              ? [{ id: "diner", label: "Diner", items: dinnerItems }]
-              : [],
-        },
+      : { categories: [{ id: "diner", label: "Diner", items: [placeholderItem] }] },
   };
   return obj;
 }
@@ -360,7 +325,7 @@ export async function POST(request: Request) {
         try {
           const message = await anthropic.messages.create({
             model,
-            max_tokens: 8192,
+            max_tokens: 16000,
             temperature: 0,
             system,
             messages: [{ role: "user", content: userContent }],
@@ -593,11 +558,24 @@ export async function POST(request: Request) {
   } catch (e) {
     console.error("[weekplan/generate] error", e);
     const raw = e instanceof Error ? e.message : String(e);
+    if (isOverloadedError(e)) {
+      return NextResponse.json(
+        {
+          error:
+            "De AI-dienst is op dit moment overbelast. Wacht een minuutje en probeer het dan opnieuw.",
+          code: "overloaded",
+          retry: true,
+        },
+        { status: 503 },
+      );
+    }
     if (isTransientNetworkError(e)) {
       return NextResponse.json(
         {
           error:
             "Netwerk-timeout naar Claude (verbinding viel weg). Probeer opnieuw; bij herhaling: andere wifi/hotspot of VPN uit, of later opnieuw.",
+          code: "network_timeout",
+          retry: true,
         },
         { status: 503 },
       );
