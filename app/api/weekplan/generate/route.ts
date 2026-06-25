@@ -105,6 +105,9 @@ function ensureAlwaysInStockFallback(data: unknown): unknown {
     (ais as { categories?: unknown[] }).categories!.length > 0;
   if (hasCategories) return data;
 
+  // Alleen allergeenvrije universele items — geen vis, peulvruchten, zuivel of nachtschade,
+  // zodat profielen met vis-allergie, FODMAP-intolerantie of nachtschade-gevoeligheid
+  // niet geblokkeerd worden door de fallback-pantry.
   obj.always_in_stock = {
     intro:
       "Basisvoorraad voor drukke dagen: eenmalige investering zodat je snel voedzame maaltijden kunt maken.",
@@ -114,7 +117,7 @@ function ensureAlwaysInStockFallback(data: unknown): unknown {
         label: "Oliën & vetten",
         items: [
           { id: "extra-vierge-olijfolie", name: "Extra vierge olijfolie", quantity: "1 fles" },
-          { id: "ghee-of-boter", name: "Ghee of roomboter", quantity: "1 pot/pak" },
+          { id: "kokosolie", name: "Kokosolie", quantity: "1 pot" },
         ],
       },
       {
@@ -123,16 +126,17 @@ function ensureAlwaysInStockFallback(data: unknown): unknown {
         items: [
           { id: "zeezout", name: "Zeezout", quantity: "1 verpakking" },
           { id: "zwarte-peper", name: "Zwarte peper", quantity: "1 molen" },
-          { id: "knoflookpoeder", name: "Knoflookpoeder", quantity: "1 potje" },
+          { id: "kurkuma", name: "Kurkuma", quantity: "1 potje" },
+          { id: "komijn", name: "Komijn (gemalen)", quantity: "1 potje" },
         ],
       },
       {
         id: "voorraadkast",
         label: "Voorraadkast",
         items: [
-          { id: "tomatenblokjes", name: "Tomatenblokjes", quantity: "2 blikken" },
-          { id: "linzen-bonen", name: "Linzen of bonen (blik/pot)", quantity: "2 stuks" },
-          { id: "tonijn-blik", name: "Tonijn in blik", quantity: "2 blikken" },
+          { id: "olijven-blik", name: "Olijven (blik/pot)", quantity: "1 pot" },
+          { id: "tahini", name: "Tahin (sesampasta)", quantity: "1 pot" },
+          { id: "rijst-quinoa", name: "Rijst of quinoa", quantity: "500 g" },
         ],
       },
       {
@@ -140,7 +144,7 @@ function ensureAlwaysInStockFallback(data: unknown): unknown {
         label: "Diepvries basis",
         items: [
           { id: "diepvries-groenten", name: "Diepvriesgroenten", quantity: "2 zakken" },
-          { id: "diepvries-vis", name: "Diepvries visfilet", quantity: "1 zak" },
+          { id: "diepvries-spinazie", name: "Diepvries spinazie", quantity: "1 zak" },
         ],
       },
     ],
