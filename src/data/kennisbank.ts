@@ -147,7 +147,7 @@ export const kennisbankCategorieen: KennisbankCategorie[] = [
     id: "hormonen-en-organen",
     titel: "Je hormonen en organen",
     korteOmschrijving: "Hoe je organen samenwerken met je hormonen, en wat voeding daarin doet.",
-    status: "preview",
+    status: "actief",
     pad: "/kennisbank/hormonen-en-organen",
     modules: [
       {
